@@ -1,0 +1,2 @@
+# StonkBot
+Discord StonkBot
