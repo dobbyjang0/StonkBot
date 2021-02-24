@@ -22,7 +22,7 @@ async def on_ready():
     
     
 @bot.command()
-async def kill(ctx):
+async def 킬(ctx):
     if ctx.author.id not in [378887088524886016, 731836288147259432]:
         await ctx.send("권한없음")
         return
@@ -37,18 +37,17 @@ async def 주식(ctx,stock_name="테스트"):
     embed= discord.Embed(title=embed_title,url=embed_title_url)
     
     
-    embed_discription_1=f"{serchStock.price:<10}{serchStock.comparedPrice:<10}{serchStock.rate:<10}\n"
-    embed_discription_2="**거래량(천주)     거래대금(백만)**\n"
-    embed_discription_3=f"{serchStock.volume:<17}{serchStock.transactionPrice:<17}\n"
-    embed_discription_4="**장중최고         장중최저**\n"
-    embed_discription_5=f"{serchStock.highPrice:<17}{serchStock.lowPrice:<17}"
+    embed_discription_1=f"{serchStock.price}\t{serchStock.comparedPrice}\t{serchStock.rate}\n"
+    embed.description = embed_discription_1
     
-    embed_discription_total=embed_discription_1+embed_discription_2+embed_discription_3+embed_discription_4+embed_discription_5
+    embed.add_field(name="거래량(천주)", value=serchStock.volume)
+    embed.add_field(name="거래대금(백만)", value=serchStock.transactionPrice)
+    embed.add_field(name="장중최고", value=serchStock.highPrice)
+    embed.add_field(name="장중최저", value=serchStock.lowPrice)
     
-    embed.description = embed_discription_total
     embed.set_image(url=serchStock.chartUrl)
     
-    await ctx.send("테스트")
+    await ctx.send(embed=embed)
     
 
-bot.run("ODE0MTE1MjI2OTMxNjkxNTIw.YDZJ4w.mocMn2S2OQyS3WOwiVRRlwu8wOI")
+bot.run("ODE0MTE1MjI2OTMxNjkxNTIw.YDZJ4w.s3ir4o7pav-Zi08rNv-ZljBsEII")
