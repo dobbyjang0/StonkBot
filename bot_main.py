@@ -42,6 +42,7 @@ async def 주식(ctx,stock_name="테스트"):
     
     embed.add_field(name="거래량(천주)", value=serchStock.volume)
     embed.add_field(name="거래대금(백만)", value=serchStock.transactionPrice)
+    embed.add_field(name=".", value=".")
     embed.add_field(name="장중최고", value=serchStock.highPrice)
     embed.add_field(name="장중최저", value=serchStock.lowPrice)
     
@@ -49,5 +50,5 @@ async def 주식(ctx,stock_name="테스트"):
     
     await ctx.send(embed=embed)
     
-
-bot.run("ODE0MTE1MjI2OTMxNjkxNTIw.YDZJ4w.s3ir4o7pav-Zi08rNv-ZljBsEII")
+#깃허브에 올릴시에는 봇 토큰 지우기
+bot.run("")
