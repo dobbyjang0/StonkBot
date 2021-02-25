@@ -38,10 +38,12 @@ async def 주식(ctx,stock_name="005930"):
         await ctx.send("잘못된 코드명")
         return
     
+    print(ctx.guild.id, ctx.channel.id, ctx.author.id, stock_name)
+    #서버 id, 채널 id, 내용 id, 보낸이 id, 검색내용
+    
     embed_title = serchStock.name
     embed_title_url = serchStock.naverUrl
     embed= discord.Embed(title=embed_title,url=embed_title_url)
-    
     
     embed_discription_1=f"{serchStock.price}\t{serchStock.comparedPrice}\t{serchStock.rate}\n"
     embed.description = embed_discription_1
