@@ -29,9 +29,15 @@ async def 킬(ctx):
     await bot.close()
     
 @bot.command()
-async def 주식(ctx,stock_name="테스트"):
-    if stock_name=="테스트":
-        serchStock=stock.stock_info()
+async def 주식(ctx,stock_name="005930"):
+    serchStock=stock.stock_info()
+    
+    try:
+        serchStock.getstock(stock_name)
+    except:
+        await ctx.send("잘못된 코드명")
+        return
+    
     embed_title = serchStock.name
     embed_title_url = serchStock.naverUrl
     embed= discord.Embed(title=embed_title,url=embed_title_url)
