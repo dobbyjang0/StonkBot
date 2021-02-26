@@ -2,6 +2,7 @@
 import pymysql
 
 # db와 연결, 'dict' 객체 context 를 인풋으로, 'pymysql.connections.Connection' 객체 반환
+# context 에 dict type 이 아니거나 필수 key가 존재하지 않으면 에러메세지 반환
 def conn(context):
     if type(context) != dict:
         raise TypeError("Context should be 'dict' type")
@@ -25,6 +26,7 @@ def conn(context):
 
 
 # 커서 생성, 'dict' 객체 context 를 인풋으로, 'pymysql.cursors.Cursor' 객체 반환
+# context 에 dict type 이 아니거나 필수 key가 존재하지 않으면 에러메세지 반환
 def curs(context):
     if type(context) != dict:
         raise TypeError("Context should be 'dict' type")
@@ -124,7 +126,7 @@ connection = conn(context)
 cursor = curs(context)
 
 # log 테이블 생성
-create_log_table(cursor, connection)
+create_log_table(connection, cursor)
 
 # LogTable 접근
 access = LogTable(connection, cursor)
