@@ -59,4 +59,4 @@ async def 주식(ctx,stock_name="005930"):
     await ctx.send(embed=embed)
     
 #깃허브에 올릴시에는 봇 토큰 지우기
-bot.run("ODE0MTE1MjI2OTMxNjkxNTIw.YDZJ4w.ra6IgSsnn0Uh9chN65o7PVxWrDg")
+bot.run("")

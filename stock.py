@@ -5,13 +5,13 @@ Created on Wed Feb 24 21:51:51 2021
 @author: dobbyjang0
 """
 import bs4
-import urllib
+import requests
 
 
 g_stockNameCode = {"삼성전자":"005930", "삼성전자우":"005935"}
 IMG_URL_BASE = "https://ssl.pstatic.net/imgfinance/chart/item/area/day/%s.png"
 MAIN_URL_BASE = "https://finance.naver.com/item/main.nhn?code="
-SISE_URL_BASE = "https://finance.naver.com/item/sise.nhn?code="
+SISE_URL_BASE = "https://finance.naver.com/item/sise.nhn?code=%s#"
 
 
 class StockInfo:
@@ -53,13 +53,16 @@ class StockInfo:
         
         self.code = code
         
-        sise_url = SISE_URL_BASE + self.code
+        sise_url = SISE_URL_BASE % self.code
         main_url = MAIN_URL_BASE + self.code
         img_url = IMG_URL_BASE % self.code
         
-        header = {'User-Agent':'Mozilla/5.0'}
-        req = urllib.request.Request(sise_url, headers=header)
-        html = urllib.request.urlopen(req)
+        session = requests.Session()
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit 537.36 (KHTML, like Gecko) Chrome",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+            }
+        html = session.get(sise_url, headers=headers).content
         bs = bs4.BeautifulSoup(html, 'lxml')
         
         #주식명
@@ -71,8 +74,8 @@ class StockInfo:
         self.price = info_table.find("strong", {"id":"_nowVal"}).get_text(strip=True)
         
         #전일대비
-        compared_price_soup = info_table.find("strong", {"id":"_diff"})
-        sign_base = compared_price_soup.find("span", {"class":"blind"}).get_text(strip=True)
+        compared_price_soup_list = info_table.find("strong", {"id":"_diff"}).find_all("span")
+        sign_base = compared_price_soup_list[0].get_text(strip=True)
         
         if sign_base == "증가":
             compared_price_sign= "▲"
@@ -80,9 +83,8 @@ class StockInfo:
             compared_price_sign= "▼"
         else:
             compared_price_sign= "-"
-        
-        print(compared_price_soup)
-        compared_price_value = compared_price_soup.find("span", {"class":"tah p11*"}).get_text(strip=True)
+
+        compared_price_value = compared_price_soup_list[1].get_text(strip=True)
         
         self.compared_price = compared_price_sign + compared_price_value
         
