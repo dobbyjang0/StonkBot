@@ -6,10 +6,11 @@ Created on Wed Feb 24 21:51:51 2021
 """
 import bs4
 import requests
+import time
 
 
 g_stockNameCode = {"삼성전자":"005930", "삼성전자우":"005935"}
-IMG_URL_BASE = "https://ssl.pstatic.net/imgfinance/chart/item/area/day/%s.png"
+IMG_URL_BASE = "https://ssl.pstatic.net/imgfinance/chart/item/area/day/%s.png?sidcode=%d"
 MAIN_URL_BASE = "https://finance.naver.com/item/main.nhn?code="
 SISE_URL_BASE = "https://finance.naver.com/item/sise.nhn?code=%s#"
 
@@ -55,7 +56,7 @@ class StockInfo:
         
         sise_url = SISE_URL_BASE % self.code
         main_url = MAIN_URL_BASE + self.code
-        img_url = IMG_URL_BASE % self.code
+        img_url = IMG_URL_BASE % ( self.code, int(time.time()*1000//1))
         
         session = requests.Session()
         headers = {
@@ -123,4 +124,5 @@ def find_code_to_name(name):
 
 hello=StockInfo()
 hello.get_stock(find_code_to_name("삼성전자"))
+#print(hello)
 print("stock.py 불러오기 완료")

@@ -26,6 +26,7 @@ async def 킬(ctx):
     if ctx.author.id not in [378887088524886016, 731836288147259432]:
         await ctx.send("권한없음")
         return
+    await ctx.send("봇 꺼짐")
     await bot.close()
     
 @bot.command()
