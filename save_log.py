@@ -83,14 +83,14 @@ class LogTable:
     # Insert into log, id는 정수타입이어야함, stock_name 은 문자열이어야함
     def insert(self, guild_id, channel_id, author_id, stock_name):
         for i in [guild_id, channel_id, author_id]:
-            if type(i) != int:
+            if type(i) != int:  
                 raise TypeError("guild_id, channel_id, author_id should be 'int' type")
         if type(stock_name) != str:
             raise TypeError("stock_name should be 'str' type")
 
         # !TODO: sql injecton 방어를 위한 데이터 검증 로직 추가
 
-        value = ','.join([guild_id, channel_id, author_id, stock_name])
+        #value = ','.join([guild_id, channel_id, author_id, stock_name])
         sql = """
         INSERT INTO `log` (
             guild_id, channel_id, author_id, stock_name
@@ -140,7 +140,7 @@ cursor = curs(context)
 create_log_table(connection, cursor)
 
 # LogTable 접근
-#access = LogTable(connection, cursor)
+access = LogTable(connection, cursor)
 
 # LogTable 에 로그 저장
-#access.insert(guild_id, channel_id, author_id, stock_name)
+#access.insert(1, 2, 3, "000000")
