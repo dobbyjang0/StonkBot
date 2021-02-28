@@ -14,11 +14,11 @@ def conn(context):
         else:
             raise KeyError("Context should have key 'user', 'password', 'host', 'port', 'db', 'charset'")
 
-    connnection = pymysql.connect(
+    connection = pymysql.connect(
         user = context["user"], 
         password = context["password"], 
         host = context["host"],
-        port = context["post"],
+        port = context["port"],
         db = context["db"], 
         charset = context["charset"]
     )
@@ -42,7 +42,7 @@ def curs(context):
         user = context["user"], 
         password = context["password"], 
         host = context["host"],
-        port = context["post"],
+        port = context["port"],
         db = context["db"], 
         charset = context["charset"]
     )
@@ -111,12 +111,23 @@ context = {"user": '설정한 db 유저명',
     "charset": 'utf8'}
 """
 
+
+# 어드민 인풋
+if input("sql 기본값 사용? (y/n)")=="y":
+    username, password, db_name = "dobbyjang0", "1234", "stonk_bot"
+    print("기본값:" , username , password , db_name)
+else:
+    username= input("username 입력 :")
+    password= input("password 입력 :")
+    db_name= input("db 입력 :")
+
+
 # db에 접근할 유저 정보 생성
-context = {"user": 'username', 
-    "password": 'password', 
-    "host": 'address', 
-    "port": 'port address',
-    "db": 'database name', 
+context = {"user": username, 
+    "password": password, 
+    "host": '127.0.0.1', 
+    "port": 3306,
+    "db": db_name, 
     "charset": 'utf8'}
 
 # connection 
@@ -129,7 +140,7 @@ cursor = curs(context)
 create_log_table(connection, cursor)
 
 # LogTable 접근
-access = LogTable(connection, cursor)
+#access = LogTable(connection, cursor)
 
 # LogTable 에 로그 저장
 #access.insert(guild_id, channel_id, author_id, stock_name)
