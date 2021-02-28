@@ -8,8 +8,6 @@ import bs4
 import requests
 import time
 
-
-g_stockNameCode = {"삼성전자":"005930", "삼성전자우":"005935"}
 IMG_URL_BASE = "https://ssl.pstatic.net/imgfinance/chart/item/area/day/%s.png?sidcode=%d"
 MAIN_URL_BASE = "https://finance.naver.com/item/main.nhn?code="
 SISE_URL_BASE = "https://finance.naver.com/item/sise.nhn?code=%s#"
@@ -28,8 +26,7 @@ class StockInfo:
         self.low_price= "0" #장중저가
         self.chart_url="https://cdn.discordapp.com/attachments/804815694717911080/805011065950830592/error-image-generic.png"
         #차트 이미지 url
-        self.naver_url="https://finance.naver.com/"
-        #네이버 증권 url
+        self.naver_url="https://finance.naver.com/" #네이버 증권 url
     
     def __str__(self):
         strInfo = (f"주식명 : {self.name}\n"+
@@ -46,8 +43,10 @@ class StockInfo:
                    
         return strInfo
     
-    def get_stock(self, code):
+    def get_stock(self, input_code):
         global IMG_URL_BASE, MAIN_URL_BASE, SISE_URL_BASE
+        
+        code = f"{input_code:0>6}"
         
         if code=="000000" or len(code) != 6:
             return
@@ -78,9 +77,9 @@ class StockInfo:
         compared_price_soup_list = info_table.find("strong", {"id":"_diff"}).find_all("span")
         sign_base = compared_price_soup_list[0].get_text(strip=True)
         
-        if sign_base == "증가":
+        if sign_base == "상승":
             compared_price_sign= "▲"
-        elif sign_base == "감소":
+        elif sign_base == "하락":
             compared_price_sign= "▼"
         else:
             compared_price_sign= "-"
@@ -111,18 +110,7 @@ class StockInfo:
         self.naver_url = main_url
         
         
-        
-        
-def find_code_to_name(name):
-    global g_stockNameCode
-    code = g_stockNameCode.get(name)
-    
-    if code is None:
-        code = "000000"
-        
-    return code
-
 hello=StockInfo()
-hello.get_stock(find_code_to_name("삼성전자"))
+hello.get_stock("192250")
 #print(hello)
 print("stock.py 불러오기 완료")

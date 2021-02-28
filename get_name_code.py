@@ -6,8 +6,8 @@ from sqlalchemy import text as sql_text
 import pymysql
 import pandas
 
-# db와 연결, 'dict' 객체 context 를 인풋으로, 'pymysql.connections.Connection' 객체 반환
-# context 에 dict type 이 아니거나 필수 key가 존재하지 않으면 에러메세지 반환
+# db와 연결, 'dict' 객체 context 를 인풋으로, 'sqlalchemy.engine.base.Engine' 객체 반환
+# 오류처리는 안됨?
 def conn(user, password, host, port, db, charset):
     
     db_connection_str = f'mysql+pymysql://{user}:{password}@{host}:{port}/{db}'
