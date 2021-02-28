@@ -115,7 +115,7 @@ context = {"user": '설정한 db 유저명',
 context = {"user": 'username', 
     "password": 'password', 
     "host": 'address', 
-    "port": 'port address'
+    "port": 'port address',
     "db": 'database name', 
     "charset": 'utf8'}
 
@@ -132,4 +132,4 @@ create_log_table(connection, cursor)
 access = LogTable(connection, cursor)
 
 # LogTable 에 로그 저장
-access.insert(guild_id, channel_id, author_id, stock_name)
+#access.insert(guild_id, channel_id, author_id, stock_name)
