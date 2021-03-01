@@ -35,7 +35,7 @@ async def 킬(ctx):
 async def 주식(ctx,stock_name="삼성전자"):
     #코드가 아닐시 검색해본다
     if stock_name.isdigit() is not True:
-        stock_list_pd = save_log_yesalchemy.get_stock_code(stock_name)
+        stock_list_pd = save_log_yesalchemy.get_stock_code(connection, stock_name)
         
         stock_list_len = len(stock_list_pd)
         
@@ -76,7 +76,7 @@ async def 주식(ctx,stock_name="삼성전자"):
     
     # 로그에 저장
     try:
-        save_log_yesalchemy.insert_serch_log(ctx.guild.id, ctx.channel.id, ctx.author.id, stock_code)
+        save_log_yesalchemy.insert_serch_log(connection, ctx.guild.id, ctx.channel.id, ctx.author.id, stock_code)
     except:
         print("로그 저장 에러")
     
@@ -97,6 +97,18 @@ async def 주식(ctx,stock_name="삼성전자"):
     
     await ctx.send(embed=embed)
     
-#깃허브에 올릴시에는 봇 토큰 지우기
-bot_token = input("봇 토큰 입력 : ")
-bot.run(bot_token)
+
+def main():
+    
+    if __name__ == "__main__":
+        #커낵션 불러옴
+        context = save_log_yesalchemy.admin_login()
+        connection = save_log_yesalchemy.conn(**context)
+        print(connection)
+        
+        #봇 실행
+        bot_token = input("봇 토큰 입력 : ")
+        bot.run(bot_token)
+        
+
+main()

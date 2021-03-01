@@ -109,8 +109,15 @@ class StockInfo:
         #네이버 증권 url
         self.naver_url = main_url
         
+
+def main():
+    #체크용
+    if __name__ == "__main__":
+        print("메인으로 실행")
         
-hello=StockInfo()
-hello.get_stock("192250")
-#print(hello)
-print("stock.py 불러오기 완료")
+        hello=StockInfo()
+        hello.get_stock("192250")
+        print("stock.py 불러오기 완료")
+        
+
+main()
