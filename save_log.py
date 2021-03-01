@@ -80,22 +80,20 @@ class LogTable:
         self.curs_obj = curs_obj
         self.conn_obj = conn_obj
     
-    # Insert into log, id는 정수타입이어야함, stock_name 은 문자열이어야함
     def insert(self, guild_id, channel_id, author_id, stock_name):
-        for i in [guild_id, channel_id, author_id]:
-            if type(i) != int:
-                raise TypeError("guild_id, channel_id, author_id should be 'int' type")
-        if type(stock_name) != str:
-            raise TypeError("stock_name should be 'str' type")
+        for i in [guild_id, channel_id, author_id], stock_name:
+            if type(i) == int or type(i) == str:
+                continue
+            else:
+                raise TypeError("guild_id, channel_id, author_id, stock_name should be int, str type")
 
-        # !TODO: sql injecton 방어를 위한 데이터 검증 로직 추가
-
-        value = ','.join([guild_id, channel_id, author_id, stock_name])
+        # sql injecton 방어를 위해 아래와 같이 쿼리 작성(인수가 이스케이프 됨)
+        # value = ','.join([guild_id, channel_id, author_id, stock_name])
         sql = """
         INSERT INTO `log` (
             guild_id, channel_id, author_id, stock_name
         )
-        VALUES (%d, %d, %d, %s)
+        VALUES (%s, %s, %s, %s)
         """
         self.curs_obj.execute(sql, (guild_id, channel_id, author_id, stock_name))
         self.conn_obj.commit()
