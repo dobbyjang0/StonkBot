@@ -74,6 +74,12 @@ async def 주식(ctx,stock_name="삼성전자"):
         await ctx.send("잘못된 코드명")
         return
     
+    # 로그에 저장
+    try:
+        save_log_yesalchemy.insert_serch_log(ctx.guild.id, ctx.channel.id, ctx.author.id, stock_code)
+    except:
+        print("로그 저장 에러")
+    
     # 출력할 embed 만들기
     embed_title = serching_stock.name
     embed_title_url = serching_stock.naver_url

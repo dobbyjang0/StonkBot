@@ -40,25 +40,41 @@ def admin_login():
                 
     return context
 
+def create_log_table():
+    global connection
+
+    sql = """
+        CREATE TABLE input_log (
+        `index` int unsigned PRIMARY KEY AUTO_INCREMENT,
+        `guild_id` bigint unsigned,
+        `channel_id` bigint unsigned,
+        `author_id` bigint unsigned,
+        `stock_code` int unsigned
+        );
+        """
+    try:
+        connection.execute(sql)
+    except:
+        error_message = "Already exist"
+        print(error_message)
+        
 #검색 로그를 db에 넣는다
-def insert_serch_log(guild_id, channel_id, author_id, stock_name):
+def insert_serch_log(guild_id, channel_id, author_id, stock_code):
     global connection
     
     #에러 처리
     if type(connection) != sqlalchemy.engine.base.Engine:
         raise TypeError("curs_obj should be cursor object")
-    for i in [guild_id, channel_id, author_id]:
+    for i in [guild_id, channel_id, author_id, stock_code]:
         if type(i) != int:
-            raise TypeError("guild_id, channel_id, author_id should be 'int' type")
-    if type(stock_name) != str:
-            raise TypeError("stock_name should be 'str' type")
+            raise TypeError("guild_id, channel_id, author_id, stock_code should be 'int' type")
             
     #실행
-    sql = sql_text("""
-        INSERT INTO log (
-            guild_id, channel_id, author_id, stock_name
+    sql = sql_text(f"""
+        INSERT INTO input_log (
+            guild_id, channel_id, author_id, stock_code
         )
-        VALUES (2, 3, 4, "00000")
+        VALUES ({guild_id}, {channel_id}, {author_id}, {stock_code})
         """)
     
     result = connection.execute(sql)
@@ -102,10 +118,12 @@ def main():
     #체크용
     if __name__ == "__main__":
         print("메인으로 실행")
-        # 입력
+        create_log_table()
+        insert_serch_log(1, 2, 3, 4)
+        # 입력y
         #insert_serch_log(1,2,3,"000000")
         
-        print(get_stock_code("L"))
+        #print(get_stock_code("L"))
         
 
 main()
