@@ -37,10 +37,14 @@ def admin_login():
             user_input = input(f"{key} 입력 (기본값으로 하려면 y) : ")
             if user_input != "y":
                 context[key] = user_input
-                
-    return context
+    
+    global connection
+    connection = conn(**context)
+    
+    return
 
-def create_log_table(connection):
+def create_log_table():
+    global connection
 
     sql = sql_text("""
         CREATE TABLE input_log (
@@ -58,7 +62,8 @@ def create_log_table(connection):
         print(error_message)
         
 #검색 로그를 db에 넣는다
-def insert_serch_log(connection ,guild_id, channel_id, author_id, stock_code):
+def insert_serch_log(guild_id, channel_id, author_id, stock_code):
+    global connection
     
     #에러 처리
     if type(connection) != sqlalchemy.engine.base.Engine:
@@ -80,7 +85,8 @@ def insert_serch_log(connection ,guild_id, channel_id, author_id, stock_code):
     return result
 
 # 이름을 입력하면 코드를 pandas 형식으로 찾아온다
-def get_stock_code(connection ,stock_name):
+def get_stock_code(stock_name):
+    global connection
 
     #에러처리
     if type(connection) != sqlalchemy.engine.base.Engine:
@@ -107,10 +113,7 @@ def main():
     if __name__ == "__main__":
         print("메인으로 실행")
         # 로그인
-        context = admin_login()
-        # connection 
-        connection = conn(**context)
-        print(connection)
+        admin_login()
 
         create_log_table()
         # 입력y
