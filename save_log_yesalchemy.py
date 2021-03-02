@@ -73,14 +73,14 @@ def insert_serch_log(guild_id, channel_id, author_id, stock_code):
             raise TypeError("guild_id, channel_id, author_id, stock_code should be 'int' type")
             
     #실행
-    sql = sql_text(f"""
+    sql = sql_text("""
         INSERT INTO input_log (
             guild_id, channel_id, author_id, stock_code
         )
-        VALUES ({guild_id}, {channel_id}, {author_id}, {stock_code})
+        VALUES (guild_id, :channel_id, :author_id, :stock_code)
         """)
-    
-    result = connection.execute(sql)
+
+    result = connection.execute(sql, guild_id=guild_id, channel_id=channel_id, author_id=author_id, stock_code=stock_code)
     
     return result
 
@@ -95,14 +95,14 @@ def get_stock_code(stock_name):
             raise TypeError("stock_name should be 'str' type")
     
     #실행
-    sql = f"""
+    sql = sql_text("""
           SELECT code, name
-          FROM stock_code
-          WHERE name LIKE "{stock_name}%"
+          FROM `stock_code`
+          WHERE name LIKE :stock_name
           ORDER BY name ASC
           LIMIT 10
-          """
-    df = pandas.read_sql_query(sql, connection)
+          """)
+    df = pandas.read_sql_query(sql = sql, con = connection, params={"stock_name":stock_name+"%"})
     
     return df
 
@@ -116,6 +116,8 @@ def main():
         admin_login()
 
         create_log_table()
+        print(get_stock_code("L"))
+        
         # 입력y
         #insert_serch_log(1,2,3,"000000")
         
