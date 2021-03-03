@@ -47,7 +47,11 @@ context = {"user": username,
 connection = conn(**context)
 
 # code, name pandas로 불러오기
-df = pandas.read_html('http://kind.krx.co.kr/corpgeneral/corpList.do?method=download', header=0)[0]
+# http://kind.krx.co.kr/corpgeneral/corpList.do?method=download [0]
+# http://data.krx.co.kr/comm/fileDn/download_csv/download.cmd
+df = pandas.read_html('http://kind.krx.co.kr/corpgeneral/corpList.do?method=download', header=0)
+print(df)
+
 df = df[['회사명', '종목코드']]
 df = df.rename(columns={'회사명': 'name', '종목코드': 'code'})
 df = df.reindex(columns=['code','name'])

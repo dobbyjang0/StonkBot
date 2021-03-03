@@ -77,7 +77,7 @@ def insert_serch_log(guild_id, channel_id, author_id, stock_code):
         INSERT INTO input_log (
             guild_id, channel_id, author_id, stock_code
         )
-        VALUES (guild_id, :channel_id, :author_id, :stock_code)
+        VALUES (:guild_id, :channel_id, :author_id, :stock_code)
         """)
 
     result = connection.execute(sql, guild_id=guild_id, channel_id=channel_id, author_id=author_id, stock_code=stock_code)
@@ -103,6 +103,8 @@ def get_stock_code(stock_name):
           LIMIT 10
           """)
     df = pandas.read_sql_query(sql = sql, con = connection, params={"stock_name":stock_name+"%"})
+    
+    print(df)
     
     return df
 
