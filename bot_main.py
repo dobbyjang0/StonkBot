@@ -15,6 +15,7 @@ async def on_ready():
     print("--- 연결 성공 ---")
     print(f"봇 이름: {bot.user.name}")
     print(f"ID: {bot.user.id}")
+    return
     
     
 @bot.command()
@@ -25,7 +26,7 @@ async def 킬(ctx):
     await ctx.send("봇 꺼짐")
     await bot.close()
     
-@bot.command()
+@bot.command(aliases=["검색"])
 async def 주식(ctx,stock_name="삼성전자"):
     #코드가 아닐시 검색해본다
     if stock_name.isdigit() is not True:
@@ -60,14 +61,14 @@ async def 주식(ctx,stock_name="삼성전자"):
     embed.description = embed_discription_1
     
     embed.add_field(name="거래량(천주)", value=serching_stock.volume)
-    embed.add_field(name="거래대금(백만)", value=serching_stock.transaction_price)
-    embed.add_field(name=".", value=".")
+    embed.add_field(name="거래대금(백만)", value=serching_stock.transaction_price, inline=False)
     embed.add_field(name="장중최고", value=serching_stock.high_price)
     embed.add_field(name="장중최저", value=serching_stock.low_price)
     
     embed.set_image(url=serching_stock.chart_url)
     
     await ctx.send(embed=embed)
+    return
     
 @bot.command()
 async def 가즈아(ctx,stock_name="삼성전자", stock_price=None):
@@ -90,6 +91,7 @@ async def 가즈아(ctx,stock_name="삼성전자", stock_price=None):
     #주식코드를 기본키로 해서 추가?
 
     await ctx.send(embed=embed)
+    return
     
 @bot.command()
 async def 모의(ctx, service_type="도움", stock_name="삼성전자", stock_count=None):
@@ -132,7 +134,7 @@ async def 모의(ctx, service_type="도움", stock_name="삼성전자", stock_co
 async def serch_stock_by_bot(ctx, stock_name):
     print("검색")
     # 이름을 sql에 검색해봄
-    stock_list_pd = save_log_yesalchemy.get_stock_code(stock_name)
+    stock_list_pd = save_log_yesalchemy.read_stock_code(stock_name)
     
     # 데이터의 갯수에 따라
     stock_list_len = len(stock_list_pd)
