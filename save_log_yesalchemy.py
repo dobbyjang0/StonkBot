@@ -142,20 +142,33 @@ def insert_account_table(author_id, stock_code, balance):
     connection.execute(sql, author_id=author_id, stock_code=stock_code, balance=balance)
 
 # 계좌 자산 조회
-def read_account_table(author_id):
+# 두번째 인자로 아무것도 입력하지 않으면 전체 조회
+# 두번째 인자에 조회하고자 하는 자산 입력(005930, 'KRW' 등)
+def read_account_table(author_id, stock_code = 'all'):
     global connection
     
+    # 계좌 전체 자산 보유량 조회
     # 원화가 최상단에 출력되게 하였음
     # 나머지는 자산 보유량에 따라 내림차순 정렬
-    sql = sql_text("""
-        SELECT stock_code, balance
-        FROM `account`
-        WHERE author_id = :author_id
-        ORDER BY FIELD(stock_code, 'KRW') DESC, balance DESC;
-        """)
+    if stock_code == 'all':
+        sql = sql_text("""
+            SELECT stock_code, balance
+            FROM `account`
+            WHERE author_id = :author_id
+            ORDER BY FIELD(stock_code, 'KRW') DESC, balance DESC;
+            """)
+        df = pandas.read_sql_query(sql = sql, con = connection, params={"author_id": author_id})
+        return df
     
-    df = pandas.read_sql_query(sql = sql, con = connection, params={"author_id": author_id})
-    return df
+    # 특정 자산 보유량 조회
+    else:
+        sql = sql_text("""
+            SELECT balance
+            FROM `account`
+            WHERE author_id = :author_id and stock_code = :stock_code;
+            """)
+        result = connection.execute(sql, author_id=author_id, stock_code=stock_code)
+        return result
 
 # 계좌 자산 업데이트(유저, 자산종류, 수량)
 # balance는 가상화폐일경우 소수점 8자리까지, KRW나 현물 주식일 경우 정수로 입력
