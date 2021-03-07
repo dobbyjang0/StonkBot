@@ -66,12 +66,10 @@ def create_log_table(conn_obj, curs_obj):
         `stock_name` varchar(20)
         );
         """
-    try:
-        curs_obj.execute(sql)
-        conn_obj.commit()
-    except:
-        error_message = "Already exist"
-        print(error_message)
+        
+    curs_obj.execute(sql)
+    conn_obj.commit()
+    
 
 # LogTable CRUD
 class LogTable:

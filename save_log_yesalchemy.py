@@ -109,6 +109,102 @@ def get_stock_code(stock_name):
     return df
 
 
+# 외화, 가상화폐 등의 확장을 고려하여 종목코드는 VARCHAR로 하였음
+# 원화도 자산개념으로 이 테이블에 전부 넣음
+# !TODO BTC등의 가상화폐는 가장 영향력 높은 거래소 하나만 거래가능하게 할것
+# balance 속성에 주식, 원화는 int 로 들어가게 필터링, 가상화폐는 소수점 8자리까지만
+# 여기서는 CRUD 만 조작하고 매수, 매도 조건확인 등의 작업은 bot_main.py 에서 컨트롤할것
+
+# 계좌 테이블 생성
+def create_account_table():
+    global connection
+
+    sql = sql_text("""
+        CREATE TABLE account (
+        `author_id` bigint unsigned,
+        `stock_code` varchar(15),
+        `balance` decimal(21, 8),
+        PRIMARY KEY (author_id, stock_code)
+        );
+        """)
+
+# 계좌 자산 insert
+# 보유하지 않은 주식 매입할때
+# 원화 보유량 없을때 지원금 받은 경우 이걸 실행하면 됨
+def insert_account_table(author_id, stock_code, balance):
+    global connection
+
+    sql = sql_text("""
+       INSERT INTO account
+       VALUES (:author_id, :stock_code, :balance)
+        """)
+    
+    connection.execute(sql, author_id=author_id, stock_code=stock_code, balance=balance)
+
+# 계좌 자산 조회
+# 두번째 인자로 아무것도 입력하지 않으면 전체 조회
+# 두번째 인자에 조회하고자 하는 자산 입력(005930, 'KRW' 등)
+def read_account_table(author_id, stock_code = 'all'):
+    global connection
+    
+    # 계좌 전체 자산 보유량 조회
+    # 원화가 최상단에 출력되게 하였음
+    # 나머지는 자산 보유량에 따라 내림차순 정렬
+    if stock_code == 'all':
+        sql = sql_text("""
+            SELECT stock_code, balance
+            FROM `account`
+            WHERE author_id = :author_id
+            ORDER BY FIELD(stock_code, 'KRW') DESC, balance DESC;
+            """)
+        df = pandas.read_sql_query(sql = sql, con = connection, params={"author_id": author_id})
+        return df
+    
+    # 특정 자산 보유량 조회
+    else:
+        sql = sql_text("""
+            SELECT balance
+            FROM `account`
+            WHERE author_id = :author_id and stock_code = :stock_code;
+            """)
+        result = connection.execute(sql, author_id=author_id, stock_code=stock_code)
+        return result
+
+# 계좌 자산 업데이트(유저, 자산종류, 수량)
+# balance는 가상화폐일경우 소수점 8자리까지, KRW나 현물 주식일 경우 정수로 입력
+def update_account_table(author_id, stock_code, balance):
+    global connection
+
+    sql = sql_text("""
+        UPDATE account
+        SET balance = :balance
+        WHERE author_id = :author_id and stock_code = :stock_code;
+        """)
+    
+    connection.execute(sql, author_id=author_id, stock_code=stock_code, balance=balance)
+
+# 계좌 자산 제거(유저, 자산종류)
+# 보유 수량 전부 매도하였을때 실행
+def delete_account_table(author_id, stock_code):
+    global connection
+
+    sql = sql_text("""
+        DELETE FROM account
+        where author_id = :author_id and stock_code = :stock_code;
+        """)
+
+    connection.execute(sql, author_id=author_id, stock_code=stock_code)
+
+
+
+    
+
+
+
+
+
+
+
 #main 함수
 def main():
     #체크용
