@@ -16,8 +16,11 @@ def conn(user, password, host, port, db, charset):
 
     return engine
 
+# 기존 로그인 함수
+''' def admin_login():
 # 첫 로그인시 사용
 def admin_login():
+
     USER_DATA_KEY = ("user", "password", "host", "port", "db", "charset")
     USER_DATA_DEFAULT = ("dobbyjang0", "1234", "127.0.0.1", 3306, "stonk_bot", "utf8")
     context = { name:value for name, value in zip(USER_DATA_KEY, USER_DATA_DEFAULT) }
@@ -41,14 +44,27 @@ def admin_login():
     global connection
     connection = conn(**context)
     
+    print(connection)
+    return
+'''
+
+# 로그인 함수
+def quick_admin_login():
+    context = pandas.read_csv('admin_login_info.csv', header=None, index_col=0, squeeze=True).to_dict()
+    
+    global connection
+    connection = conn(**context)
+    
+    print(connection)
+    
     return
 
 
 class LogTable:
     def __init__(self):
-        global conn
+        global connection
         
-        self.connection = conn
+        self.connection = connection
         self.name = 'input_log'
         
     #어케 쓸지는 모르지만 일단 만들어둠
@@ -61,13 +77,17 @@ class LogTable:
                        CREATE TABLE input_log (
                            `index` int unsigned PRIMARY KEY AUTO_INCREMENT,
                            `time` datetime DEFAULT NOW(),
+                           `type` varchar(15),
                            `guild_id` bigint unsigned,
                            `channel_id` bigint unsigned,
                            `author_id` bigint unsigned,
-                           `stock_code` varchar(15)
+                           `stock_code` varchar(15),
+                           `stock_value` int unsigned,
+                           `stock_count` int
                            );
                        """)
         
+        print(self.connection)
         try:
             self.connection.execute(sql)
         except:
@@ -75,7 +95,11 @@ class LogTable:
             print(error_message)
     
     #검색 로그를 db에 넣는다
-    def insert_serch_log(self, guild_id, channel_id, author_id, stock_code):
+    def insert_serch_log(self, guild_id, channel_id, author_id, stock_code, stock_value):
+        input_variable={"guild_id" : guild_id, "channel_id" : channel_id,
+                        "author_id" : author_id, "stock_code" : stock_code,
+                        "stock_value" : stock_value
+                        }
         
         #에러 처리
         if type(connection) != sqlalchemy.engine.base.Engine:
@@ -87,21 +111,21 @@ class LogTable:
         #실행
         sql = sql_text("""
                        INSERT INTO input_log (
-                           time, guild_id, channel_id, author_id, stock_code
+                           time, type, guild_id, channel_id, author_id, stock_code, stock_value
                        )
-                       VALUES (default ,:guild_id, :channel_id, :author_id, :stock_code)
+                       VALUES (default, "검색", :guild_id, :channel_id, :author_id, :stock_code, :stock_value)
                        """)
 
-        result = self.connection.execute(sql, guild_id=guild_id, channel_id=channel_id, author_id=author_id, stock_code=stock_code)
+        result = self.connection.execute(sql, **input_variable)
     
         return result
 
 
 class StockInfoTable:
     def __init__(self):
-        global conn
+        global connection
         
-        self.connection = conn
+        self.connection = connection
         self.name = 'stock_code'
         
     # 어케 쓸지는 모르지만 일단 만들어둠
@@ -151,9 +175,9 @@ class AccountTable:
     # 여기서는 CRUD 만 조작하고 매수, 매도 조건확인 등의 작업은 bot_main.py 에서 컨트롤할것
     
     def __init__(self):
-        global conn
+        global connection
         
-        self.connection = conn
+        self.connection = connection
         self.name = 'stock_code'
         
     #어케 쓸지는 모르지만 일단 만들어둠
@@ -161,7 +185,7 @@ class AccountTable:
         self.connection = conn
     
     # 계좌 테이블 생성
-    def create_account_table(self):
+    def create_table(self):
         
         sql = sql_text("""
                        CREATE TABLE account (
@@ -249,8 +273,9 @@ def main():
     if __name__ == "__main__":
         print("메인으로 실행")
         # 로그인
-        admin_login()
+        quick_admin_login()
         
+        # 
 
 main()
 
