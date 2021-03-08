@@ -17,7 +17,6 @@ def conn(user, password, host, port, db, charset):
     return engine
 
 # 기존 로그인 함수
-''' def admin_login():
 # 첫 로그인시 사용
 def admin_login():
 
@@ -46,25 +45,20 @@ def admin_login():
     
     print(connection)
     return
-'''
+
 
 # 로그인 함수
 def quick_admin_login():
     context = pandas.read_csv('admin_login_info.csv', header=None, index_col=0, squeeze=True).to_dict()
-    
-    global connection
     connection = conn(**context)
-    
     print(connection)
     
-    return
+    return connection
 
 
 class LogTable:
     def __init__(self):
-        global connection
-        
-        self.connection = connection
+        self.connection = quick_admin_login()
         self.name = 'input_log'
         
     #어케 쓸지는 모르지만 일단 만들어둠
@@ -102,8 +96,6 @@ class LogTable:
                         }
         
         #에러 처리
-        if type(connection) != sqlalchemy.engine.base.Engine:
-            raise TypeError("curs_obj should be cursor object")
         for i in [guild_id, channel_id, author_id, stock_code]:
             if type(i) != int:
                 raise TypeError("guild_id, channel_id, author_id, stock_code should be 'int' type")
@@ -123,9 +115,7 @@ class LogTable:
 
 class StockInfoTable:
     def __init__(self):
-        global connection
-        
-        self.connection = connection
+        self.connection = quick_admin_login()
         self.name = 'stock_code'
         
     # 어케 쓸지는 모르지만 일단 만들어둠
@@ -149,8 +139,6 @@ class StockInfoTable:
     # 이름을 입력하면 코드를 pandas 형식으로 찾아온다
     def read_stock_code(self,stock_name):
         #에러처리
-        if type(connection) != sqlalchemy.engine.base.Engine:
-            raise TypeError("curs_obj should be cursor object")
         if type(stock_name) != str:
             raise TypeError("stock_name should be 'str' type")
     
@@ -175,9 +163,7 @@ class AccountTable:
     # 여기서는 CRUD 만 조작하고 매수, 매도 조건확인 등의 작업은 bot_main.py 에서 컨트롤할것
     
     def __init__(self):
-        global connection
-        
-        self.connection = connection
+        self.connection = quick_admin_login()
         self.name = 'stock_code'
         
     #어케 쓸지는 모르지만 일단 만들어둠
@@ -274,7 +260,7 @@ def main():
         print("메인으로 실행")
         # 로그인
         quick_admin_login()
-        LogTable().insert_serch_log(1,2,3,42,5)
+        LogTable().insert_serch_log(1, 2, 3, 4, 5)
         
         # 
 
