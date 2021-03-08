@@ -53,7 +53,6 @@ def quick_admin_login():
     
     return connection
 
-
 class LogTable:
     def __init__(self):
         self.connection = quick_admin_login()
@@ -70,11 +69,13 @@ class LogTable:
                            `index` int unsigned PRIMARY KEY AUTO_INCREMENT,
                            `time` datetime DEFAULT NOW(),
                            `type` varchar(15),
+                           `type_sub` varchar(15),
                            `guild_id` bigint unsigned,
                            `channel_id` bigint unsigned,
                            `author_id` bigint unsigned,
                            `stock_code` varchar(15),
                            `stock_value` int unsigned,
+                           `stock_value_sub` int unsigned,
                            `stock_count` int
                            );
                        """)
@@ -109,7 +110,6 @@ class LogTable:
         result = self.connection.execute(sql, **input_variable)
     
         return result
-
 
 class StockInfoTable:
     def __init__(self):
@@ -151,8 +151,7 @@ class StockInfoTable:
         df = pandas.read_sql_query(sql = sql, con = self.connection, params={"stock_name":stock_name+"%"})
 
         return df
-  
-      
+    
 class AccountTable:
     # 외화, 가상화폐 등의 확장을 고려하여 종목코드는 VARCHAR로 하였음
     # 원화도 자산개념으로 이 테이블에 전부 넣음
@@ -176,6 +175,7 @@ class AccountTable:
                            `author_id` bigint unsigned,
                            `stock_code` varchar(15),
                            `balance` decimal(21, 8),
+                           `avg_value` decimal(21, 8),
                            PRIMARY KEY (author_id, stock_code)
                            );
                        """)
@@ -189,32 +189,33 @@ class AccountTable:
     # 계좌 자산 insert
     # 보유하지 않은 주식 매입할때
     # 원화 보유량 없을때 지원금 받은 경우 이걸 실행하면 됨
-    def insert_account(self, author_id, stock_code, balance):
+    def insert(self, author_id, stock_code, balance, avg_value=0):
 
 
         sql = sql_text("""
                        INSERT INTO account
-                       VALUES (:author_id, :stock_code, :balance)
+                       VALUES (:author_id, :stock_code, :balance, :avg_value)
                        """)
     
-        self.connection.execute(sql, author_id=author_id, stock_code=stock_code, balance=balance)
+        self.connection.execute(sql, author_id=author_id, stock_code=stock_code, balance=balance, avg_value=avg_value)
 
     # 계좌 자산 조회
     # 두번째 인자로 아무것도 입력하지 않으면 전체 조회
     # 두번째 인자에 조회하고자 하는 자산 입력(005930, 'KRW' 등)
-    def read_account(self, author_id, stock_code = 'all'):
+    def read(self, author_id, stock_code = 'all'):
     
         # 계좌 전체 자산 보유량 조회
         # 원화가 최상단에 출력되게 하였음
         # 나머지는 자산 보유량에 따라 내림차순 정렬
         if stock_code == 'all':
             sql = sql_text("""
-                           SELECT stock_code, balance
+                           SELECT stock_code, balance, avg_value
                            FROM `account`
-                           HERE author_id = :author_id
+                           WHERE author_id = :author_id
                            ORDER BY FIELD(stock_code, 'KRW') DESC, balance DESC;
                            """)
             df = pandas.read_sql_query(sql = sql, con = self.connection, params={"author_id": author_id})
+            
             return df
     
         # 특정 자산 보유량 조회
@@ -224,24 +225,24 @@ class AccountTable:
                            FROM `account`
                            WHERE author_id = :author_id and stock_code = :stock_code;
                            """)
-            result = self.connection.execute(sql, author_id=author_id, stock_code=stock_code)
+            result = self.connection.execute(sql, author_id=author_id, stock_code=stock_code).fetchone()
             return result
 
     # 계좌 자산 업데이트(유저, 자산종류, 수량)
     # balance는 가상화폐일경우 소수점 8자리까지, KRW나 현물 주식일 경우 정수로 입력
-    def update_account(self, author_id, stock_code, balance):
+    def update(self, author_id, stock_code, balance, avg_value):
 
         sql = sql_text("""
                        UPDATE account
-                       SET balance = :balance
+                       SET balance = balance + :balance, avg_value=:avg_value
                        WHERE author_id = :author_id and stock_code = :stock_code;
                        """)
     
-        self.connection.execute(sql, author_id=author_id, stock_code=stock_code, balance=balance)
+        self.connection.execute(sql, author_id=author_id, stock_code=stock_code, balance=balance, avg_value=avg_value)
 
     # 계좌 자산 제거(유저, 자산종류)
     # 보유 수량 전부 매도하였을때 실행
-    def delete_account(self, author_id, stock_code):
+    def delete(self, author_id, stock_code):
 
         sql = sql_text("""
                        DELETE FROM account
@@ -250,6 +251,70 @@ class AccountTable:
 
         self.connection.execute(sql, author_id=author_id, stock_code=stock_code)
 
+class SupportFundTable:
+    # 유저 id, 시간,    
+    def __init__(self):
+        self.connection = quick_admin_login()
+        self.name = 'account'
+        
+    #어케 쓸지는 모르지만 일단 만들어둠
+    def change_connection(self, conn):
+        self.connection = conn
+        
+    def create_table(self):
+        
+        sql = sql_text("""
+                       CREATE TABLE support_fund (
+                           `author_id` bigint unsigned PRIMARY KEY,
+                           `last_get_time` date DEFAULT curdate(),
+                           `get_count` int unsigned
+                           );
+                       """)
+        try:
+            self.connection.execute(sql)
+        except:
+            error_message = "Already exist"
+            print(error_message)
+           
+    #최초 지원금 지급
+    def insert(self, author_id):
+
+        sql = sql_text("""
+                       INSERT INTO support_fund
+                       VALUES (:author_id, default, 1)
+                       """)
+    
+        self.connection.execute(sql, author_id=author_id)  
+        
+    def update(self, author_id):
+        
+        sql = sql_text("""
+                       UPDATE support_fund
+                       SET last_get_time = default, get_count = get_count + 1
+                       WHERE author_id = :author_id;
+                       """)
+        
+        self.connection.execute(sql, author_id=author_id)
+    
+    def read(self, author_id):
+        
+        sql = sql_text("""
+                       SELECT last_get_time, get_count
+                       FROM support_fund
+                       WHERE author_id = :author_id
+                       """)
+        
+        result = self.connection.execute(sql, author_id=author_id).fetchone()
+        return result
+    
+    def delete(self, author_id):
+        
+        sql = sql_text("""
+                       DELETE FROM support_fund
+                       where author_id = :author_id
+                       """)
+                       
+        self.connection.execute(sql, author_id=author_id) 
 
 #main 함수
 def main():
@@ -257,9 +322,9 @@ def main():
     if __name__ == "__main__":
         print("메인으로 실행")
         # 로그인
-        quick_admin_login()
-        LogTable().insert_serch_log(1, 2, 3, 4, 5)
-        
+        SupportFundTable().create_table()
+        LogTable().create_table()
+        AccountTable().create_table()
         # 
 
 main()

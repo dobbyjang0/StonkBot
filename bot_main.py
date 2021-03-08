@@ -4,7 +4,7 @@ import discord
 from discord.ext import commands, tasks
 import pandas
 import stock
-import save_log_yesalchemy
+import save_log_yesalchemy as bot_table
 
 nest_asyncio.apply()
 
@@ -50,8 +50,13 @@ async def 주식(ctx,stock_name="삼성전자",chart_type="일"):
         serching_stock.change_graph_interval(chart_type)
     
     # 로그에 저장
+    print(serching_stock.price)
+    input_variable={"guild_id" : ctx.guild.id, "channel_id" : ctx.channel.id,
+                        "author_id" : ctx.author.id, "stock_code" : stock_code,
+                        "stock_value" : int(serching_stock.price.replace(",",""))
+                        }
     try:
-        save_log_yesalchemy.insert_serch_log(ctx.guild.id, ctx.channel.id, ctx.author.id, stock_code, serching_stock.price)
+        bot_table.LogTable().insert_serch_log(**input_variable)
     except:
         print("로그 저장 에러")
     
@@ -63,8 +68,8 @@ async def 주식(ctx,stock_name="삼성전자",chart_type="일"):
     embed.description = embed_discription_1
     
     embed.add_field(name="거래량(천주)", value=serching_stock.volume)
-    embed.add_field(name="거래대금(백만)", value=serching_stock.transaction_price, inline=False)
-    embed.add_field(name="장중최고", value=serching_stock.high_price)
+    embed.add_field(name="거래대금(백만)", value=serching_stock.transaction_price)
+    embed.add_field(name="장중최고", value=serching_stock.high_price, inline=False)
     embed.add_field(name="장중최저", value=serching_stock.low_price)
     
     embed.set_image(url=serching_stock.chart_url)
@@ -97,13 +102,32 @@ async def 가즈아(ctx,stock_name="삼성전자", stock_price=None):
     
 @bot.command()
 async def 모의(ctx, service_type="도움", stock_name="삼성전자", stock_count=None):
+    # 자주 쓰이는 변수 미리 지정
+    user_id = ctx.author.id
+    
     if service_type == "도움":
         await ctx.send("도움 메세지 출력")
         return
     elif service_type == "지원금":
-        # 지원금이 없는 경우 초기 지원금을 준다
-        # 24시간이 지나면 지원금을 준다
-        return
+        try:
+            fund_get_result = bot_table.SupportFundTable().read(user_id)
+            print(fund_get_result)
+        except:
+            print("에러")
+            return
+            
+        #처음일경우 지원금 500만
+        if fund_get_result is None:
+            bot_table.SupportFundTable().insert(user_id)
+            bot_table.AccountTable().insert(user_id, "KWH", 5000000)
+            await ctx.send("초기 지원금 500만")
+            return
+        #아닐경우 매일마다 3만
+        else:
+            bot_table.SupportFundTable().update(user_id)
+            bot_table.AccountTable().update(user_id, "KWH", 30000)
+            await ctx.send("일일 지원금 3만")
+            return
     elif service_type == "매도":
         # 계좌의 돈을 불러온다
             # 돈이 없으면 취소
@@ -121,9 +145,13 @@ async def 모의(ctx, service_type="도움", stock_name="삼성전자", stock_co
         # 유저당 접속 서버도 저장해야되나??
         return
     elif service_type == "보유":
-        # 보유 주식에서 유저랑 똑같은 것 불러오면 될듯
-        # 자금도 추가
-        return
+        try:
+            fund_list = bot_table.AccountTable().read(user_id)
+            await ctx.send(str(fund_list))
+            return
+        except:
+            await ctx.send("보유 자산이 없습니다")
+            return
     elif service_type == "분석":
         # 자신이 이득을 봤는지 손해를 봤는지 기록해주는 기능
         # 구현 힘들라나?
@@ -136,7 +164,7 @@ async def 모의(ctx, service_type="도움", stock_name="삼성전자", stock_co
 async def serch_stock_by_bot(ctx, stock_name):
     print("검색")
     # 이름을 sql에 검색해봄
-    stock_list_pd = save_log_yesalchemy.read_stock_code(stock_name)
+    stock_list_pd = bot_table.StockInfoTable().read_stock_code(stock_name)
     
     # 데이터의 갯수에 따라
     stock_list_len = len(stock_list_pd)
@@ -192,10 +220,10 @@ async def serch_stock_by_bot(ctx, stock_name):
 def main():
     if __name__ == "__main__":
         #커낵션 불러옴
-        save_log_yesalchemy.admin_login()
         
         #봇 실행
-        bot_token = input("봇 토큰 입력 : ")
+        with open("bot_token.txt", mode='r', encoding='utf-8') as txt:
+            bot_token = txt.read()
         bot.run(bot_token)
         
 main()
