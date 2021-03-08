@@ -274,6 +274,7 @@ def main():
         print("메인으로 실행")
         # 로그인
         quick_admin_login()
+        LogTable().insert_serch_log(1,2,3,42,5)
         
         # 
 
