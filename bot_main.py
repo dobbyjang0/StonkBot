@@ -27,7 +27,7 @@ async def 킬(ctx):
     await bot.close()
     
 @bot.command(aliases=["검색"])
-async def 주식(ctx,stock_name="삼성전자"):
+async def 주식(ctx,stock_name="삼성전자",chart_type="일"):
     #코드가 아닐시 검색해본다
     if stock_name.isdigit() is not True:
         stock_code , stock_real_name = await serch_stock_by_bot(ctx, stock_name)
@@ -39,17 +39,19 @@ async def 주식(ctx,stock_name="삼성전자"):
     #코드로 주식 검색
     serching_stock=stock.StockInfo()
     
-    print(stock_code)
-    
     try:
         serching_stock.get_stock(stock_code)
     except:
         await ctx.send("잘못된 코드명")
         return
     
+    #그래프의 url을 바꿈
+    if chart_type != "일":
+        serching_stock.change_graph_interval(chart_type)
+    
     # 로그에 저장
     try:
-        save_log_yesalchemy.insert_serch_log(ctx.guild.id, ctx.channel.id, ctx.author.id, int(stock_code))
+        save_log_yesalchemy.insert_serch_log(ctx.guild.id, ctx.channel.id, ctx.author.id, stock_code, serching_stock.price)
     except:
         print("로그 저장 에러")
     

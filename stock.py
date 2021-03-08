@@ -109,6 +109,20 @@ class StockInfo:
         #네이버 증권 url
         self.naver_url = main_url
         
+    def change_graph_interval(self, interval_type):
+        type_dic = {"일":"area/day", "주":"area/week", "월":"area/month3", "년":"area/year",
+                    "3년":"area/year3", "5년":"area/year5", "10년":"area/year10",
+                    "일봉":"candle/day", "주봉":"candle/week", "월봉":"candle/month"
+                    }
+        type_url = type_dic.get(interval_type)
+        
+        if type_url is None:
+            print("오류")
+            return
+        else:
+            self.chart_url = self.chart_url.replace("area/day", type_url)
+            return
+        
 
 def main():
     #체크용

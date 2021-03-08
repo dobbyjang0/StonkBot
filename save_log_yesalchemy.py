@@ -17,7 +17,6 @@ def conn(user, password, host, port, db, charset):
     return engine
 
 # 기존 로그인 함수
-# 첫 로그인시 사용
 def admin_login():
 
     USER_DATA_KEY = ("user", "password", "host", "port", "db", "charset")
@@ -45,7 +44,6 @@ def admin_login():
     
     print(connection)
     return
-
 
 # 로그인 함수
 def quick_admin_login():
@@ -164,7 +162,7 @@ class AccountTable:
     
     def __init__(self):
         self.connection = quick_admin_login()
-        self.name = 'stock_code'
+        self.name = 'account'
         
     #어케 쓸지는 모르지만 일단 만들어둠
     def change_connection(self, conn):
