@@ -135,7 +135,7 @@ class StockInfoTable:
         print("저장완료")
     
     # 이름을 입력하면 코드를 pandas 형식으로 찾아온다
-    def read_stock_code(self,stock_name):
+    def read_stock_name(self,stock_name):
         #에러처리
         if type(stock_name) != str:
             raise TypeError("stock_name should be 'str' type")
@@ -151,6 +151,19 @@ class StockInfoTable:
         df = pandas.read_sql_query(sql = sql, con = self.connection, params={"stock_name":stock_name+"%"})
 
         return df
+    
+    # 정확한 코드를 입력하면 이름을 찾는다
+    def read_stock_code(self,stock_code):
+        #실행
+        sql = sql_text("""
+                       SELECT name
+                       FROM `stock_code`
+                       WHERE code LIKE :stock_code
+                       """)
+                       
+        result = self.connection.execute(sql, stock_code=stock_code).fetchone()
+        
+        return result
     
 class AccountTable:
     # 외화, 가상화폐 등의 확장을 고려하여 종목코드는 VARCHAR로 하였음
@@ -175,7 +188,7 @@ class AccountTable:
                            `author_id` bigint unsigned,
                            `stock_code` varchar(15),
                            `balance` decimal(21, 8),
-                           `avg_value` decimal(21, 8),
+                           `sum_value` decimal(21, 8),
                            PRIMARY KEY (author_id, stock_code)
                            );
                        """)
@@ -189,15 +202,15 @@ class AccountTable:
     # 계좌 자산 insert
     # 보유하지 않은 주식 매입할때
     # 원화 보유량 없을때 지원금 받은 경우 이걸 실행하면 됨
-    def insert(self, author_id, stock_code, balance, avg_value=0):
+    def insert(self, author_id, stock_code, balance, stock_value):
 
 
         sql = sql_text("""
                        INSERT INTO account
-                       VALUES (:author_id, :stock_code, :balance, :avg_value)
+                       VALUES (:author_id, :stock_code, :balance, :stock_value)
                        """)
     
-        self.connection.execute(sql, author_id=author_id, stock_code=stock_code, balance=balance, avg_value=avg_value)
+        self.connection.execute(sql, author_id=author_id, stock_code=stock_code, balance=balance, stock_value=stock_value)
 
     # 계좌 자산 조회
     # 두번째 인자로 아무것도 입력하지 않으면 전체 조회
@@ -209,7 +222,7 @@ class AccountTable:
         # 나머지는 자산 보유량에 따라 내림차순 정렬
         if stock_code == 'all':
             sql = sql_text("""
-                           SELECT stock_code, balance, avg_value
+                           SELECT stock_code, balance, sum_value
                            FROM `account`
                            WHERE author_id = :author_id
                            ORDER BY FIELD(stock_code, 'KRW') DESC, balance DESC;
@@ -221,7 +234,7 @@ class AccountTable:
         # 특정 자산 보유량 조회
         else:
             sql = sql_text("""
-                           SELECT balance
+                           SELECT balance, sum_value
                            FROM `account`
                            WHERE author_id = :author_id and stock_code = :stock_code;
                            """)
@@ -230,15 +243,15 @@ class AccountTable:
 
     # 계좌 자산 업데이트(유저, 자산종류, 수량)
     # balance는 가상화폐일경우 소수점 8자리까지, KRW나 현물 주식일 경우 정수로 입력
-    def update(self, author_id, stock_code, balance, avg_value):
+    def update(self, author_id, stock_code, balance, stock_value):
 
         sql = sql_text("""
                        UPDATE account
-                       SET balance = balance + :balance, avg_value=:avg_value
+                       SET balance = balance + (:balance), sum_value= sum_value +(:stock_value)
                        WHERE author_id = :author_id and stock_code = :stock_code;
                        """)
     
-        self.connection.execute(sql, author_id=author_id, stock_code=stock_code, balance=balance, avg_value=avg_value)
+        self.connection.execute(sql, author_id=author_id, stock_code=stock_code, balance=balance, stock_value=stock_value)
 
     # 계좌 자산 제거(유저, 자산종류)
     # 보유 수량 전부 매도하였을때 실행

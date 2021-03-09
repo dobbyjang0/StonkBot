@@ -27,32 +27,23 @@ async def 킬(ctx):
     await bot.close()
     
 @bot.command(aliases=["검색"])
-async def 주식(ctx,stock_name="삼성전자",chart_type="일"):
-    #코드가 아닐시 검색해본다
-    if stock_name.isdigit() is not True:
-        stock_code , stock_real_name = await serch_stock_by_bot(ctx, stock_name)
-        if stock_code == None:
-            return
-    else:
-        stock_code = stock_name
-    
-    #코드로 주식 검색
-    serching_stock=stock.StockInfo()
-    
-    try:
-        serching_stock.get_stock(stock_code)
-    except:
-        await ctx.send("잘못된 코드명")
+async def 주식(ctx,stock_name="도움",chart_type="일"):
+    if stock_name == "도움":
+        await ctx.send("도움말 출력")
         return
     
+    serching_stock = await get_stock_info(ctx, stock_name)
+    
+    if serching_stock is None:
+        return
+
     #그래프의 url을 바꿈
     if chart_type != "일":
         serching_stock.change_graph_interval(chart_type)
     
     # 로그에 저장
-    print(serching_stock.price)
     input_variable={"guild_id" : ctx.guild.id, "channel_id" : ctx.channel.id,
-                        "author_id" : ctx.author.id, "stock_code" : stock_code,
+                        "author_id" : ctx.author.id, "stock_code" : int(serching_stock.code),
                         "stock_value" : int(serching_stock.price.replace(",",""))
                         }
     try:
@@ -69,6 +60,7 @@ async def 주식(ctx,stock_name="삼성전자",chart_type="일"):
     
     embed.add_field(name="거래량(천주)", value=serching_stock.volume)
     embed.add_field(name="거래대금(백만)", value=serching_stock.transaction_price)
+    embed.add_field(name=".", value=".")
     embed.add_field(name="장중최고", value=serching_stock.high_price, inline=False)
     embed.add_field(name="장중최저", value=serching_stock.low_price)
     
@@ -101,9 +93,9 @@ async def 가즈아(ctx,stock_name="삼성전자", stock_price=None):
     return
     
 @bot.command()
-async def 모의(ctx, service_type="도움", stock_name="삼성전자", stock_count=None):
+async def 모의(ctx, service_type="도움", stock_name=None, stock_count=1):
     # 자주 쓰이는 변수 미리 지정
-    user_id = ctx.author.id
+    user_id = ctx.author.id   
     
     if service_type == "도움":
         await ctx.send("도움 메세지 출력")
@@ -119,25 +111,102 @@ async def 모의(ctx, service_type="도움", stock_name="삼성전자", stock_co
         #처음일경우 지원금 500만
         if fund_get_result is None:
             bot_table.SupportFundTable().insert(user_id)
-            bot_table.AccountTable().insert(user_id, "KWH", 5000000)
+            bot_table.AccountTable().insert(user_id, "KRW", 5000000, None)
             await ctx.send("초기 지원금 500만")
             return
         #아닐경우 매일마다 3만
         else:
             bot_table.SupportFundTable().update(user_id)
-            bot_table.AccountTable().update(user_id, "KWH", 30000)
+            bot_table.AccountTable().update(user_id, "KRW", 30000, None)
             await ctx.send("일일 지원금 3만")
             return
-    elif service_type == "매도":
-        # 계좌의 돈을 불러온다
-            # 돈이 없으면 취소
-        # 돈이 있으면 계좌 돈 감소, 주식 갯수 증가
-        return
     elif service_type == "매수":
-        # 보유주식 목록을 불러온다
-            # 보유 주식이 팔려는 갯수보다 적으면 취소
+        #입력 오류
+        if stock_name is None:
+            await ctx.send("거래할 주식을 입력해주세요.")
+            return
+        if type(stock_count) != int:
+            await ctx.send("수량에 숫자를 입력해주세요.")
+            return
+        
+        #주식을 검색한다
+        serching_stock = await get_stock_info(ctx, stock_name)
+    
+        if serching_stock is None:
+            await ctx.send("거래가 취소되었습니다.")
+            return
+        stock_code= serching_stock.code
+        stock_price = int(serching_stock.price.replace(",",""))
+        total_stock_price = stock_price * stock_count
+        
+        # 계좌의 돈을 불러온다
+        krw_account = bot_table.AccountTable().read(user_id,"KRW")
+        if krw_account is None:
+            await ctx.send("지원금을 받아주세요.")
+            return
+        krw_money = int(krw_account[0])
+        
+        # 돈이 없으면 취소
+        if krw_money < total_stock_price:
+            await ctx.send("돈 없음")
+            await ctx.send(f"최대 {krw_money//stock_price}주 가능")
+            return
+        # 돈이 있으면 계좌 돈 감소, 주식 갯수 증가
+        else:
+            if bot_table.AccountTable().read(user_id, stock_code) is None:
+                bot_table.AccountTable().insert(user_id, stock_code, stock_count, total_stock_price)
+            else:
+                bot_table.AccountTable().update(user_id, stock_code, stock_count, total_stock_price)
+            bot_table.AccountTable().update(user_id, "KRW", -total_stock_price, None)
+            await ctx.send(f"{stock_code},{stock_price},{stock_count}거래완료")
+            return
+    elif service_type == "매도":
+        #입력 오류
+        if stock_name is None:
+            await ctx.send("거래할 주식을 입력해주세요.")
+            return
+        if type(stock_count) != int:
+            await ctx.send("수량을 입력해주세요.")
+            return
+        
+        #주식 검색
+        serching_stock = await get_stock_info(ctx, stock_name)
+    
+        if serching_stock is None:
+            await ctx.send("거래가 취소되었습니다.")
+            return
+        stock_code= serching_stock.code
+        stock_price = int(serching_stock.price.replace(",",""))
+        total_stock_price = stock_price * stock_count
+        
+        # 계좌에 주식이 있는지 확인
+        stock_account = bot_table.AccountTable().read(user_id, stock_code)
+        if stock_account is None:
+            await ctx.send("팔고자 하는 주식이 없습니다.")
+            return
+        
+        balance = int(stock_account[0])
+        sum_value = stock_account[1]
+        sell_sum_value = sum_value*stock_count/balance
+        
+        # 보유 주식이 팔려는 갯수보다 적으면 취소
+        if balance < stock_count:
+            await ctx.send("팔고자 하는 주식이 적습니다")
+            await ctx.send(f"최대 {balance}주 가능")
+            return
         # 갯수가 충분하면 주식 갯수 감소, 계좌 돈 증가 
-        return
+        elif balance == stock_count:
+            bot_table.AccountTable().delete(user_id, stock_code)
+            bot_table.AccountTable().update(user_id, "KRW", total_stock_price, None)
+            await ctx.send(f"{stock_code},{stock_price},{stock_count}거래완료")
+            return
+        else:
+            bot_table.AccountTable().update(user_id, stock_code, -stock_count, -sell_sum_value)
+            bot_table.AccountTable().update(user_id, "KRW", total_stock_price, None)
+            await ctx.send(f"{stock_code},{stock_price},{stock_count}거래완료")
+            return
+
+
     elif service_type == "순위":
         # 계좌를 돈 순으로 정렬 후 10개 불러오면 될듯
         return
@@ -164,7 +233,7 @@ async def 모의(ctx, service_type="도움", stock_name="삼성전자", stock_co
 async def serch_stock_by_bot(ctx, stock_name):
     print("검색")
     # 이름을 sql에 검색해봄
-    stock_list_pd = bot_table.StockInfoTable().read_stock_code(stock_name)
+    stock_list_pd = bot_table.StockInfoTable().read_stock_name(stock_name)
     
     # 데이터의 갯수에 따라
     stock_list_len = len(stock_list_pd)
@@ -215,7 +284,31 @@ async def serch_stock_by_bot(ctx, stock_name):
             # 목록 지우고 출력
             await list_msg.delete()
             return stock_code , stock_real_name
-            
+        
+def is_stock_code(stock_code):
+    stock_name = bot_table.StockInfoTable().read_stock_code(stock_code)
+    
+    return (stock_name is not None)
+
+async def get_stock_info(ctx, stock_name):
+    #코드가 아닐시 검색해본다
+    if is_stock_code(stock_name):
+        stock_code = stock_name
+    else:
+        stock_code , stock_real_name = await serch_stock_by_bot(ctx, stock_name)
+        if stock_code == None:
+            return None
+    
+    #코드로 주식 검색
+    serching_stock=stock.StockInfo()
+    
+    try:
+        serching_stock.get_stock(stock_code)
+    except:
+        await ctx.send("잘못된 코드명")
+        return None
+    
+    return serching_stock
             
 def main():
     if __name__ == "__main__":

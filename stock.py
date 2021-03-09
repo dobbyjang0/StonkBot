@@ -46,7 +46,8 @@ class StockInfo:
     def get_stock(self, input_code):
         global IMG_URL_BASE, MAIN_URL_BASE, SISE_URL_BASE
         
-        code = f"{input_code:0>6}"
+        if type(input_code) == int:
+            code = f"{input_code:0>6}"
         
         if code=="000000" or len(code) != 6:
             return
