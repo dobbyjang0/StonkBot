@@ -7,61 +7,35 @@ import pandas
 
 
 
-# db와 연결, 'dict' 객체 context 를 인풋으로, 'sqlalchemy.engine.base.Engine' 객체 반환
-# 오류처리는 안됨?
-def conn(user, password, host, port, db, charset):
+#싱글톤 커낵션, 아니 이거 걍 이래놔도 되나? 시발?
+class Connection():
+    def __new__(cls):
+        if not hasattr(cls, 'cursor'):
+            
+            def conn(user, password, host, port, db, charset):
+                db_connection_str = f'mysql+pymysql://{user}:{password}@{host}:{port}/{db}'
+                engine = create_engine(db_connection_str, encoding = charset, echo = True)
+
+                return engine
+            
+            def quick_admin_login():
+                context = pandas.read_csv('admin_login_info.csv', header=None, index_col=0, squeeze=True).to_dict()
+                connection = conn(**context)
+                print(connection)
     
-    db_connection_str = f'mysql+pymysql://{user}:{password}@{host}:{port}/{db}'
-    engine = create_engine(db_connection_str, encoding = charset, echo = True)
+                return connection
+            
+            cls.cursor = quick_admin_login()
+        return cls.cursor
 
-    return engine
-
-# 기존 로그인 함수
-def admin_login():
-
-    USER_DATA_KEY = ("user", "password", "host", "port", "db", "charset")
-    USER_DATA_DEFAULT = ("dobbyjang0", "1234", "127.0.0.1", 3306, "stonk_bot", "utf8")
-    context = { name:value for name, value in zip(USER_DATA_KEY, USER_DATA_DEFAULT) }
-    
-    """
-    context = {"user": '설정한 db 유저명', 
-    "password": '설정한 db 유저 비밀번호', 
-    "host": '서버 주소, 로컬일 경우 127.0.0.1', 
-    "port": '포트 주소'
-    "db": 'db 이름', 
-    "charset": 'utf8'}
-    """
-
-    # 어드민 인풋
-    if input("sql 기본값 사용? (y/n)")!="y":
-        for key in USER_DATA_KEY:
-            user_input = input(f"{key} 입력 (기본값으로 하려면 y) : ")
-            if user_input != "y":
-                context[key] = user_input
-    
-    global connection
-    connection = conn(**context)
-    
-    print(connection)
-    return
-
-# 로그인 함수
-def quick_admin_login():
-    context = pandas.read_csv('admin_login_info.csv', header=None, index_col=0, squeeze=True).to_dict()
-    connection = conn(**context)
-    print(connection)
-    
-    return connection
-
-class LogTable:
+#부모 테이블 클래스, 여기다가 각 테이블마다 추가되는거 추가하기
+class Table:
     def __init__(self):
-        self.connection = quick_admin_login()
-        self.name = 'input_log'
-        
-    #어케 쓸지는 모르지만 일단 만들어둠
-    def change_connection(self, conn):
-        self.connection = conn
-        
+        self.connection = Connection()
+        #self.name 필요하려나?
+
+#로그 테이블
+class LogTable(Table):
     #테이블을 만든다
     def create_table(self):
         sql = sql_text("""
@@ -111,15 +85,7 @@ class LogTable:
     
         return result
 
-class StockInfoTable:
-    def __init__(self):
-        self.connection = quick_admin_login()
-        self.name = 'stock_code'
-        
-    # 어케 쓸지는 모르지만 일단 만들어둠
-    def change_connection(self, conn):
-        self.connection = conn
-    
+class StockInfoTable(Table):
     # 테이블을 만든다
     # get_name_code.py에 있던거 긁어옴. 나중에 수정해야함
     def create_table(self):
@@ -165,20 +131,12 @@ class StockInfoTable:
         
         return result
     
-class AccountTable:
+class AccountTable(Table):
     # 외화, 가상화폐 등의 확장을 고려하여 종목코드는 VARCHAR로 하였음
     # 원화도 자산개념으로 이 테이블에 전부 넣음
     # !TODO BTC등의 가상화폐는 가장 영향력 높은 거래소 하나만 거래가능하게 할것
     # balance 속성에 주식, 원화는 int 로 들어가게 필터링, 가상화폐는 소수점 8자리까지만
     # 여기서는 CRUD 만 조작하고 매수, 매도 조건확인 등의 작업은 bot_main.py 에서 컨트롤할것
-    
-    def __init__(self):
-        self.connection = quick_admin_login()
-        self.name = 'account'
-        
-    #어케 쓸지는 모르지만 일단 만들어둠
-    def change_connection(self, conn):
-        self.connection = conn
     
     # 계좌 테이블 생성
     def create_table(self):
@@ -264,16 +222,8 @@ class AccountTable:
 
         self.connection.execute(sql, author_id=author_id, stock_code=stock_code)
 
-class SupportFundTable:
-    # 유저 id, 시간,    
-    def __init__(self):
-        self.connection = quick_admin_login()
-        self.name = 'account'
-        
-    #어케 쓸지는 모르지만 일단 만들어둠
-    def change_connection(self, conn):
-        self.connection = conn
-        
+class SupportFundTable(Table):
+    # 유저 id, 시간,            
     def create_table(self):
         
         sql = sql_text("""
@@ -333,12 +283,7 @@ class SupportFundTable:
 def main():
     #체크용
     if __name__ == "__main__":
-        print("메인으로 실행")
-        # 로그인
-        SupportFundTable().create_table()
-        LogTable().create_table()
-        AccountTable().create_table()
-        # 
+        pass
 
 main()
 
