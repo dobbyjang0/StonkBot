@@ -26,6 +26,7 @@ class Connection():
                 return connection
             
             cls.cursor = quick_admin_login()
+            
         return cls.cursor
 
 #부모 테이블 클래스, 여기다가 각 테이블마다 추가되는거 추가하기
@@ -283,6 +284,7 @@ class SupportFundTable(Table):
 def main():
     #체크용
     if __name__ == "__main__":
+        Connection()
         pass
 
 main()
