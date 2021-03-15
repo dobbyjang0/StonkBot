@@ -10,6 +10,7 @@ nest_asyncio.apply()
 
 bot = commands.Bot(command_prefix="--")
 
+
 @bot.event
 async def on_ready():
     print("--- 연결 성공 ---")
@@ -44,14 +45,14 @@ async def 주식(ctx,stock_name="도움",chart_type="일"):
     
     # 로그에 저장
     input_variable={"guild_id" : ctx.guild.id, "channel_id" : ctx.channel.id,
-                        "author_id" : ctx.author.id, "stock_code" : int(serching_stock.code),
+                        "author_id" : ctx.author.id, "stock_code" : serching_stock.code,
                         "stock_value" : int(serching_stock.price.replace(",",""))
                         }
     try:
         bot_table.LogTable().insert_serch_log(**input_variable)
     except:
         print("로그 저장 에러")
-    
+        
     # 출력할 embed 만들기
     embed_title = serching_stock.name
     embed_title_url = serching_stock.naver_url
@@ -167,12 +168,24 @@ async def mock_buy(ctx, stock_name=None, stock_count=1):
         else:
             bot_table.AccountTable().update(user_id, stock_code, stock_count, total_stock_price)
         bot_table.AccountTable().update(user_id, "KRW", -total_stock_price, None)
+        
+        # 로그에 저장
+        input_variable={"guild_id" : ctx.guild.id, "channel_id" : ctx.channel.id,
+                        "author_id" : ctx.author.id, "stock_code" : stock_code,
+                        "stock_value" : stock_price
+                        }
+        
+        try:
+            bot_table.LogTable().insert_mock_log(mock_type="매수",stock_count=stock_count,**input_variable)
+        except:
+            print("로그 저장 에러")
+        
         await ctx.send(f"{stock_code},{stock_price},{stock_count}거래완료")
         return
 
 @mock.command(name="매도")
 async def mock_sell(ctx, stock_name=None, stock_count=1):
-    user_id = ctx.author
+    user_id = ctx.author.id
     #입력 오류
     if stock_name is None:
         await ctx.send("거래할 주식을 입력해주세요.")
@@ -210,17 +223,41 @@ async def mock_sell(ctx, stock_name=None, stock_count=1):
     elif balance == stock_count:
         bot_table.AccountTable().delete(user_id, stock_code)
         bot_table.AccountTable().update(user_id, "KRW", total_stock_price, None)
+        
+        # 로그에 저장
+        input_variable={"guild_id" : ctx.guild.id, "channel_id" : ctx.channel.id,
+                        "author_id" : ctx.author.id, "stock_code" : stock_code,
+                        "stock_value" : stock_price
+                        }
+        try:
+            bot_table.LogTable().insert_mock_log(mock_type="매도",stock_count=stock_count,**input_variable)
+        except:
+            print("로그 저장 에러")
+            
         await ctx.send(f"{stock_code},{stock_price},{stock_count}거래완료")
+        
         return
     else:
         bot_table.AccountTable().update(user_id, stock_code, -stock_count, -sell_sum_value)
         bot_table.AccountTable().update(user_id, "KRW", total_stock_price, None)
+        
+        # 로그에 저장
+        input_variable={"guild_id" : ctx.guild.id, "channel_id" : ctx.channel.id,
+                        "author_id" : ctx.author.id, "stock_code" : stock_code,
+                        "stock_value" : stock_price
+                        }
+        try:
+            bot_table.LogTable().insert_mock_log(mock_type="매도",stock_count=stock_count,**input_variable)
+        except:
+            print("로그 저장 에러")
+        
         await ctx.send(f"{stock_code},{stock_price},{stock_count}거래완료")
+        
         return
 
 @mock.command(name="보유")
 async def mock_have(ctx, stock_name=None, stock_count=1):
-    user_id = ctx.author
+    user_id = ctx.author.id
     try:
         fund_list = bot_table.AccountTable().read(user_id)
         await ctx.send(str(fund_list))
