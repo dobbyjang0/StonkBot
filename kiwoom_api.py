@@ -11,6 +11,11 @@ from PyQt5.QAxContainer import *
 # 당연하게도 장중에만 실시간데이터 메소드 작동함. 추후 시간 확인 기능 추가예정
 
 class KiwoomConnect:
+    def __new__(cls):
+        if not hasattr(cls, "_instance"):
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
     ##########################
     #       initialize       #
     ##########################
@@ -134,8 +139,8 @@ a = inst.info_tr('005930', '0001')
 a1 = inst.info_tr('035720', '0003')
 stock = ['005930', '035720']
 b = inst.manyinfo_tr(stock, '0002')
-c = inst.info_real('0035720')
+# c = inst.info_real('0035720')
 print(a)
 print(a1)
 print(b)
-print(c)
+# print(c)
