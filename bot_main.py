@@ -5,6 +5,7 @@ from discord.ext import commands, tasks
 import pandas
 import stock
 import save_log_yesalchemy as bot_table
+from embed_form import embed_factory as ef
 
 nest_asyncio.apply()
 
@@ -53,46 +54,26 @@ async def 주식(ctx,stock_name="도움",chart_type="일"):
     except:
         print("로그 저장 에러")
         
-    # 출력할 embed 만들기
-    embed_title = serching_stock.name
-    embed_title_url = serching_stock.naver_url
-    embed= discord.Embed(title=embed_title,url=embed_title_url)
-    embed_discription_1=f"{serching_stock.price}\t{serching_stock.compared_price}\t{serching_stock.rate}\n"
-    embed.description = embed_discription_1
-    
-    embed.add_field(name="거래량(천주)", value=serching_stock.volume)
-    embed.add_field(name="거래대금(백만)", value=serching_stock.transaction_price)
-    embed.add_field(name=".", value=".")
-    embed.add_field(name="장중최고", value=serching_stock.high_price)
-    embed.add_field(name="장중최저", value=serching_stock.low_price)
-    
-    embed.set_image(url=serching_stock.chart_url)
-    
-    await ctx.send(embed=embed)
+    # embed 출력
+    await ctx.send(embed=ef("serch_result",**serching_stock.to_dict()).get)
     return
 
 #가즈아 기능
 @bot.command()
-async def 가즈아(ctx,stock_name="삼성전자", stock_price=None):
+async def 가즈아(ctx, stock_name="삼성전자", stock_price=None):
     #주식 검색
     stock_code , stock_real_name = await serch_stock_by_bot(ctx, stock_name)
     
     if stock_code == None:
         return
     
-    if stock_price is None:
-        embed_message_price = ""
-    else:
-        if stock_price.isdigit() is not True or stock_price[-1] != "층":
+    if stock_price is not None:
+        if stock_price.isdigit() or stock_price[-1] != "층":
             await ctx.send("주식 가격이나 층수를 입력해주세요")
             return
-        embed_message_price = f"{stock_price}까지"
     
-    embed = discord.Embed(title= f"{stock_real_name}, {embed_message_price}가즈아!!" )
-    embed.set_author(name="총 n명의 사용자가 가즈아를 외쳤습니다")
     #주식코드를 기본키로 해서 추가?
-
-    await ctx.send(embed=embed)
+    await ctx.send(embed=ef("gazua", stock_real_name, stock_price).get)
     return
     
 # 쿠팡 관련 커맨드
