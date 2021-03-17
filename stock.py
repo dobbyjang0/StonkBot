@@ -124,6 +124,8 @@ class StockInfo:
             self.chart_url = self.chart_url.replace("area/day", type_url)
             return
         
+    def to_dict(self):
+        return self.__dict__
 
 def main():
     #체크용

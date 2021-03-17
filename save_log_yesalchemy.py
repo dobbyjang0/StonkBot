@@ -70,9 +70,9 @@ class LogTable(Table):
                         }
         
         #에러 처리
-        for i in [guild_id, channel_id, author_id, stock_code]:
+        for i in [guild_id, channel_id, author_id]:
             if type(i) != int:
-                raise TypeError("guild_id, channel_id, author_id, stock_code should be 'int' type")
+                raise TypeError("guild_id, channel_id, author_id should be 'int' type")
             
         #실행
         sql = sql_text("""
@@ -85,6 +85,32 @@ class LogTable(Table):
         result = self.connection.execute(sql, **input_variable)
     
         return result
+    
+    #매수, 매도 로그를 db에 넣는다.
+    def insert_mock_log(self, mock_type, stock_count, guild_id, channel_id, author_id, stock_code, stock_value):
+        input_variable={"guild_id" : guild_id, "channel_id" : channel_id,
+                        "author_id" : author_id, "stock_code" : stock_code,
+                        "stock_value" : stock_value, "mock_type" : mock_type,
+                        "stock_count" : stock_count
+                        }
+        
+        #에러 처리
+        for i in [guild_id, channel_id, author_id]:
+            if type(i) != int:
+                raise TypeError("guild_id, channel_id, author_id should be 'int' type")
+            
+        #실행
+        sql = sql_text("""
+                       INSERT INTO input_log (
+                           time, type, guild_id, channel_id, author_id, stock_code, stock_value, stock_count
+                       )
+                       VALUES (default, :mock_type, :guild_id, :channel_id, :author_id, :stock_code, :stock_value, :stock_count)
+                       """)
+
+        result = self.connection.execute(sql, **input_variable)
+    
+        return result
+    
 
 class StockInfoTable(Table):
     # 테이블을 만든다
