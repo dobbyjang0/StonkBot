@@ -8,9 +8,24 @@ import bs4
 import requests
 import time
 
-IMG_URL_BASE = "https://ssl.pstatic.net/imgfinance/chart/item/area/day/%s.png?sidcode=%d"
-MAIN_URL_BASE = "https://finance.naver.com/item/main.nhn?code="
-SISE_URL_BASE = "https://finance.naver.com/item/sise.nhn?code=%s#"
+#싱글톤 세션
+class Session():
+    def __new__(cls):
+        if not hasattr(cls, 'session'):
+            cls.session = requests.Session()
+            
+        return cls.session
+    
+#싱글톤 헤더
+class Headers():
+    def __new__(cls):
+        if not hasattr(cls, 'headers'):
+            cls.headers = {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit 537.36 (KHTML, like Gecko) Chrome",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
+            }
+            
+        return cls.headers
 
 class InfoBase:
     def __init__(self):
@@ -41,7 +56,9 @@ class InfoBase:
 
 class StockInfo(InfoBase):
     def get(self, input_code):
-        global IMG_URL_BASE, MAIN_URL_BASE, SISE_URL_BASE
+        IMG_URL_BASE = "https://ssl.pstatic.net/imgfinance/chart/item/area/day/%s.png?sidcode=%d"
+        MAIN_URL_BASE = "https://finance.naver.com/item/main.nhn?code="
+        SISE_URL_BASE = "https://finance.naver.com/item/sise.nhn?code=%s#"
         
         if type(input_code) == int:
             code = f"{input_code:0>6}"
@@ -55,12 +72,7 @@ class StockInfo(InfoBase):
         main_url = MAIN_URL_BASE + self.code
         img_url = IMG_URL_BASE % ( self.code, int(time.time()*1000//1))
         
-        session = requests.Session()
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit 537.36 (KHTML, like Gecko) Chrome",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
-            }
-        html = session.get(sise_url, headers=headers).content
+        html = Session().get(sise_url, headers=Headers()).content
         bs = bs4.BeautifulSoup(html, 'lxml')
         
         #주식명
@@ -135,12 +147,7 @@ class KOSInfo(InfoBase):
         KOS_URL = f"https://finance.naver.com/sise/sise_index.nhn?code={index_name}"
         KOS_IMG_URL = f"https://ssl.pstatic.net/imgfinance/chart/sise/siseMain{index_name}.png?sid=%s"
         
-        session = requests.Session()
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_5) AppleWebKit 537.36 (KHTML, like Gecko) Chrome",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8"
-            }
-        html = session.get(KOS_URL, headers=headers).content
+        html = Session().get(KOS_URL, headers=Headers()).content
         bs = bs4.BeautifulSoup(html, 'lxml')
         
         info_table = bs.find("div", {"class": "subtop_sise_detail"})
