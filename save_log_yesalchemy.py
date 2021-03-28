@@ -113,19 +113,37 @@ class LogTable(Table):
     
 
 class StockInfoTable(Table):
-    # 테이블을 만든다
-    # get_name_code.py에 있던거 긁어옴. 나중에 수정해야함
+    # csv에서 정보를 불러온다.
+    # 일단 3월 28일자 기준 파일 사용, 자동화 필요
     def create_table(self):
         
         #특히 아직까지 주식정보 자동으로 뽑는법을 모르겠음. krx거기는 자바스크립트로 되어있어서 안퍼짐
-        df = pandas.read_html('http://kind.krx.co.kr/corpgeneral/corpList.do?method=download', header=0)
+        df = pandas.read_csv("data_4021_20210328.csv", encoding='CP949')
 
-        df = df[['회사명', '종목코드']]
-        df = df.rename(columns={'회사명': 'name', '종목코드': 'code'})
-        df = df.reindex(columns=['code','name'])
+        df = df[['단축코드', '한글 종목약명', '시장구분']]
+        df = df.rename(columns={'단축코드': 'code', '한글 종목약명': 'name', '시장구분': 'market'})
         
         df.to_sql(name='stock_code', con=self.connection, if_exists='append',index=False, method='multi')
         print("저장완료")
+    
+    # 최초 테이블 생성
+    # 처음 테이블 만들 때 이것으로 만드는거 추천
+    def init_create_table(self):
+        sql = sql_text("""
+                       CREATE TABLE stock_code (
+                           `code` varchar(15) PRIMARY KEY,
+                           `name` varchar(15),
+                           `market` varchar(15)
+                           );
+                       """)
+        
+        print(self.connection)
+        try:
+            self.connection.execute(sql)
+        except:
+            error_message = "Already exist"
+            print(error_message)
+        pass
     
     # 이름을 입력하면 코드를 pandas 형식으로 찾아온다
     def read_stock_name(self,stock_name):
@@ -135,7 +153,7 @@ class StockInfoTable(Table):
     
         #실행
         sql = sql_text("""
-                       SELECT code, name
+                       SELECT code, name, market
                        FROM `stock_code`
                        WHERE name LIKE :stock_name
                        ORDER BY name ASC
@@ -167,7 +185,6 @@ class AccountTable(Table):
     
     # 계좌 테이블 생성
     def create_table(self):
-        
         sql = sql_text("""
                        CREATE TABLE account (
                            `author_id` bigint unsigned,
@@ -310,9 +327,9 @@ class SupportFundTable(Table):
 def main():
     #체크용
     if __name__ == "__main__":
-        Connection()
-        pass
-
+        table = StockInfoTable()
+        print(table.read_stock_name('삼성'))
+        
 main()
 
     
