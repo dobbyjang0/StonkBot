@@ -26,8 +26,19 @@ class formbase:
 # 더 좋은 구조 있으면 추천받음
 
 class serch_result(formbase):
-    def insert(self, name, naver_url, price, compared_price, rate, volume, transaction_price, high_price, low_price, chart_url, *arg, **kwarg):
-        self.embed.title = name
+    def insert(self, name, naver_url, price, compared_price, rate, volume, transaction_price, high_price, low_price, chart_url, market = None, *arg, **kwarg):
+        
+        def set_market_to_emoji(market):
+            if market is None:
+                return ""
+            elif market == "KOSPI":
+                return "<:KOS:825783079229980674><:PI:825783079590297600>"
+            elif market == "KOSDAQ":
+                return "<:KOS:825783079229980674><:DAQ:825783079570243594>"
+            elif market == 'KONEX':
+                return '<:KON:825783079481901067><:EX:825783079754661888>'
+        
+        self.embed.title = name + ' ' + set_market_to_emoji(market)
         self.embed.url = naver_url
         self.embed.description = f"{price}\t{compared_price}\t{rate}\n"
         

@@ -280,13 +280,14 @@ async def serch_stock_by_bot(ctx, stock_name):
     # 0개일 경우
     if stock_list_len == 0:
         await ctx.send("데이터가 없음")
-        return None , None
+        return None, None, None
     # 1개일 경우
     elif stock_list_len == 1:
-        stock_code = int(stock_list_pd.iat[0, 0])
+        stock_code = stock_list_pd.iat[0, 0]
         stock_real_name = stock_list_pd.iat[0, 1]
+        stock_market = stock_list_pd.iat[0, 2]
         
-        return stock_code , stock_real_name
+        return stock_code, stock_real_name, stock_market
     
     # 1개 이상일 경우
     else:
@@ -296,7 +297,7 @@ async def serch_stock_by_bot(ctx, stock_name):
         def check(message: discord.Message):
             return message.channel == ctx.channel and message.author == ctx.author
         
-        stock_code , stock_real_name = None , None
+        stock_code, stock_real_name, stock_market = None, None, None
         
         try:
             # 숫자 입력을 받는다
@@ -315,15 +316,16 @@ async def serch_stock_by_bot(ctx, stock_name):
                 
             else:
                 stock_index = int(check_number)
-                stock_code = int(stock_list_pd.iat[stock_index, 0])
+                stock_code = stock_list_pd.iat[stock_index, 0]
                 stock_real_name = stock_list_pd.iat[stock_index, 1]
+                stock_market = stock_list_pd.iat[stock_index, 2]
                 
             await check_number_msg.delete()
             
         finally:
             # 목록 지우고 출력
             await list_msg.delete()
-            return stock_code , stock_real_name
+            return stock_code, stock_real_name, stock_market
 
  
 #주식 코드인지 아닌지 확인
@@ -338,7 +340,7 @@ async def get_stock_info(ctx, stock_name):
     if is_stock_code(stock_name):
         stock_code = stock_name
     else:
-        stock_code, stock_real_name = await serch_stock_by_bot(ctx, stock_name)
+        stock_code, stock_real_name, stock_market = await serch_stock_by_bot(ctx, stock_name)
         if stock_code == None:
             return None
     
@@ -347,6 +349,8 @@ async def get_stock_info(ctx, stock_name):
     
     try:
         serching_stock.get(stock_code)
+        serching_stock.market = stock_market
+        #stock과의 연관성이 너무 많다. 증권사 api 쓸줄 알면 갈아치울것
     except:
         await ctx.send("잘못된 코드명")
         return None
