@@ -157,6 +157,7 @@ async def mock_buy(ctx, stock_name=None, stock_count=1):
         await ctx.send("거래가 취소되었습니다.")
         return
     stock_code= serching_stock.code
+    stock_name= serching_stock.name
     stock_price = int(serching_stock.price.replace(",",""))
     total_stock_price = stock_price * stock_count
     
@@ -191,7 +192,7 @@ async def mock_buy(ctx, stock_name=None, stock_count=1):
         except:
             print("로그 저장 에러")
         
-        await ctx.send(f"{stock_code},{stock_price},{stock_count}거래완료")
+        await ctx.send(embed=ef("mock_buy", stock_name, stock_count, stock_price, total_stock_price).get)
         return
 
 @mock.command(name="매도")
@@ -224,6 +225,7 @@ async def mock_sell(ctx, stock_name=None, stock_count=1):
     balance = int(stock_account[0])
     sum_value = stock_account[1]
     sell_sum_value = sum_value*stock_count/balance
+    profit = total_stock_price - sell_sum_value
     
     # 보유 주식이 팔려는 갯수보다 적으면 취소
     if balance < stock_count:
@@ -245,7 +247,7 @@ async def mock_sell(ctx, stock_name=None, stock_count=1):
         except:
             print("로그 저장 에러")
             
-        await ctx.send(f"{stock_code},{stock_price},{stock_count}거래완료")
+        await ctx.send(embed=ef("mock_sell", stock_name, stock_count, stock_price, total_stock_price, profit).get)
         
         return
     else:
@@ -262,7 +264,7 @@ async def mock_sell(ctx, stock_name=None, stock_count=1):
         except:
             print("로그 저장 에러")
         
-        await ctx.send(f"{stock_code},{stock_price},{stock_count}거래완료")
+        await ctx.send(embed=ef("mock_sell", stock_name, stock_count, stock_price, total_stock_price, profit).get)
         
         return
 
