@@ -212,7 +212,8 @@ async def mock_sell(ctx, stock_name=None, stock_count=1):
     if serching_stock is None:
         await ctx.send("거래가 취소되었습니다.")
         return
-    stock_code= serching_stock.code
+    stock_code = serching_stock.code
+    stock_name = serching_stock.name
     stock_price = int(serching_stock.price.replace(",",""))
     total_stock_price = stock_price * stock_count
     
