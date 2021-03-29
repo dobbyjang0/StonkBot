@@ -27,14 +27,11 @@ class formbase:
 
 #이모지 변형
 def set_market_to_emoji(market):
-    if market is None:
-        return ""
-    elif market == "KOSPI":
-        return "<:KOS:825783079229980674><:PI:825783079590297600>"
-    elif market == "KOSDAQ":
-        return "<:KOS:825783079229980674><:DAQ:825783079570243594>"
-    elif market == 'KONEX':
-        return '<:KON:825783079481901067><:EX:825783079754661888>'
+    market_emoji ={"KOSPI":"<:KOS:825783079229980674><:PI:825783079590297600>",
+                   "KOSDAQ":"<:KOS:825783079229980674><:DAQ:825783079570243594>",
+                   'KONEX':'<:KON:825783079481901067><:EX:825783079754661888>'
+        }
+    return market_emoji.get(market)
 
 def number_to_emoji(number):
     emoji = ["0️⃣","1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"]
