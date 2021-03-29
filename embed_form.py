@@ -64,13 +64,13 @@ class serch_list(formbase):
 #모의주식 관련
 class mock_buy(formbase):
     def insert(self, name, count, price, total_price, *arg, **kwarg):
-        self.embed.title= f"{name} {count}주 매수 완료되었습니다."
+        self.embed.title= f"🔴 {name} {count}주 매수 완료되었습니다."
         self.embed.add_field(name='단가', value=price)
         self.embed.add_field(name='총 금액', value=total_price)   
 
 class mock_sell(formbase):
     def insert(self, name, count, price, total_price, profit, *arg, **kwarg):
-        self.embed.title= f"{name} {count}주 매도 완료되었습니다."
+        self.embed.title= f"🔵 {name} {count}주 매도 완료되었습니다."
         self.embed.add_field(name='단가', value=price)
         self.embed.add_field(name='총 금액', value=total_price)
         self.embed.add_field(name='차익', value=profit)
