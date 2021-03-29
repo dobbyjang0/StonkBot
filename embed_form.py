@@ -31,7 +31,10 @@ def set_market_to_emoji(market):
                    "KOSDAQ":"<:KOS:825783079229980674><:DAQ:825783079570243594>",
                    'KONEX':'<:KON:825783079481901067><:EX:825783079754661888>'
         }
-    return market_emoji.get(market)
+    output = market_emoji.get(market)
+    if not output:
+        output = ""
+    return output
 
 def number_to_emoji(number):
     emoji = ["0️⃣","1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"]
