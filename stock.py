@@ -41,7 +41,7 @@ class InfoBase:
         self.chart_url="https://cdn.discordapp.com/attachments/804815694717911080/805011065950830592/error-image-generic.png"
         #차트 이미지 url
         self.naver_url="https://finance.naver.com/" #네이버 증권 url
-        #main과의 연관성이 너무 많다. 증권사 api 쓸줄 알면 갈아치울것
+        #main과의 연관성이 너무 많다. 증권사 api 쓸줄 알게 되면 갈아치울것
         self.market=None
     
     def change_graph_interval(self, interval_type):

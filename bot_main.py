@@ -27,6 +27,14 @@ async def 킬(ctx):
         return
     await ctx.send("봇 꺼짐")
     await bot.close()
+    
+@bot.command()
+async def 테스트(ctx):
+    if ctx.author.id not in [378887088524886016, 731836288147259432]:
+        await ctx.send("권한없음")
+        return
+    await ctx.send(embed=ef("testembed").get)
+
 
 #코스피, 코스닥
 #로그 저장 추가하기
@@ -84,7 +92,7 @@ async def 주식(ctx,stock_name="도움",chart_type="일"):
 @bot.command()
 async def 가즈아(ctx, stock_name="삼성전자", stock_price=None):
     #주식 검색
-    stock_code , stock_real_name = await serch_stock_by_bot(ctx, stock_name)
+    stock_code, stock_real_name, __ = await serch_stock_by_bot(ctx, stock_name)
     
     if stock_code == None:
         return
@@ -292,7 +300,7 @@ async def serch_stock_by_bot(ctx, stock_name):
     # 1개 이상일 경우
     else:
         # 목록을 보여준다
-        list_msg = await ctx.send(str(stock_list_pd))
+        list_msg = await ctx.send(embed=ef("serch_list", stock_list_pd).get)
         
         def check(message: discord.Message):
             return message.channel == ctx.channel and message.author == ctx.author
@@ -350,7 +358,7 @@ async def get_stock_info(ctx, stock_name):
     try:
         serching_stock.get(stock_code)
         serching_stock.market = stock_market
-        #stock과의 연관성이 너무 많다. 증권사 api 쓸줄 알면 갈아치울것
+        #stock과의 연관성이 너무 많다. 증권사 api 쓸줄 알게되면 갈아치울것
     except:
         await ctx.send("잘못된 코드명")
         return None
