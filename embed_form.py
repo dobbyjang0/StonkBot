@@ -109,6 +109,9 @@ class gazua(formbase):
         self.embed.title = f"{stock_name}, {embed_message_price}가즈아!!"
         self.embed.set_author(name="총 n명의 사용자가 가즈아를 외쳤습니다")
         
+        GAZUA_IMG_URL = 'https://media.discordapp.net/attachments/804815694717911080/827234484112982086/gazua.png?width=676&height=676'
+        self.embed.set_thumbnail(GAZUA_IMG_URL)
+        
 class testembed(formbase):
     def init_make(self):
         self.embed.title = "빈칸테스트 : %10s" % "내용"
