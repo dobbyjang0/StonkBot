@@ -243,6 +243,20 @@ class AccountTable(Table):
             result = self.connection.execute(sql, author_id=author_id, stock_code=stock_code).fetchone()
             return result
 
+    #계좌 자산을 이름과 같이 읽는다.
+    def read_all(self, author_id):
+        sql = sql_text("""
+                       SELECT ua.stock_code, ua.balance, ua.sum_value, sc.name
+                       FROM (
+                           SELECT stock_code, balance, sum_value
+                           FROM `account`
+                           WHERE author_id = :author_id) AS ua
+                       LEFT JOIN `stock_code` AS sc ON ua.stock_code = sc.code
+                       ORDER BY FIELD(stock_code, 'KRW') DESC, balance DESC;
+                       """)
+        df = pandas.read_sql_query(sql = sql, con = self.connection, params={"author_id": author_id})
+        return df
+
     # 계좌 자산 업데이트(유저, 자산종류, 수량)
     # balance는 가상화폐일경우 소수점 8자리까지, KRW나 현물 주식일 경우 정수로 입력
     def update(self, author_id, stock_code, balance, stock_value):
@@ -327,8 +341,8 @@ class SupportFundTable(Table):
 def main():
     #체크용
     if __name__ == "__main__":
-        table = StockInfoTable()
-        print(table.read_stock_name('삼성'))
+        table = AccountTable()
+        print(table.read_all(378887088524886016))
         
 main()
 

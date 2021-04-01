@@ -5,11 +5,12 @@ from discord.ext import commands, tasks
 import pandas
 import stock
 import save_log_yesalchemy as bot_table
+from datetime import date
 from embed_form import embed_factory as ef
 
 nest_asyncio.apply()
 
-bot = commands.Bot(command_prefix="--")
+bot = commands.Bot(command_prefix="-")
 
 
 @bot.event
@@ -129,15 +130,20 @@ async def mock_support_fund(ctx):
     #처음일경우 지원금 500만
     if fund_get_result is None:
         bot_table.SupportFundTable().insert(user_id)
-        bot_table.AccountTable().insert(user_id, "KRW", 5000000, None)
-        await ctx.send("초기 지원금 500만")
+        bot_table.AccountTable().insert(user_id, "KRW", 3000000, None)
+        await ctx.send(embed=ef("mock_support_first").get)
         return
     #아닐경우 매일마다 3만
     else:
-        bot_table.SupportFundTable().update(user_id)
-        bot_table.AccountTable().update(user_id, "KRW", 30000, None)
-        await ctx.send("일일 지원금 3만")
-        return
+        last_get_time, get_count = fund_get_result
+        if date.today() != last_get_time:
+            bot_table.SupportFundTable().update(user_id)
+            bot_table.AccountTable().update(user_id, "KRW", 30000, None)
+            await ctx.send(embed=ef("mock_support_second", get_count).get)
+            #후원하면 지원금 묵혀서 얻는 것은 어떨까
+        else:
+            await ctx.send(embed=ef("mock_support_no").get)
+
 
 @mock.command(name="매수")
 async def mock_buy(ctx, stock_name=None, stock_count=1):
@@ -273,8 +279,8 @@ async def mock_sell(ctx, stock_name=None, stock_count=1):
 async def mock_have(ctx, stock_name=None, stock_count=1):
     user_id = ctx.author.id
     try:
-        fund_list = bot_table.AccountTable().read(user_id)
-        await ctx.send(str(fund_list))
+        fund_list = bot_table.AccountTable().read_all(user_id)
+        await ctx.send(embed=ef("mock_have", ctx.author, fund_list).get)
         return
     except:
         await ctx.send("보유 자산이 없습니다")

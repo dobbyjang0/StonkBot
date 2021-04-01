@@ -46,7 +46,7 @@ class serch_result(formbase):
 
         self.embed.title = name + ' ' + set_market_to_emoji(market)
         self.embed.url = naver_url
-        self.embed.description = f"{price}\t{compared_price}\t{rate}\n"
+        self.embed.description = f"현재가 : **{price}**\t{compared_price}\t{rate}\n"
         
         self.embed.add_field(name="거래량(천주)", value=volume)
         self.embed.add_field(name="거래대금(백만)", value=transaction_price)
@@ -62,6 +62,23 @@ class serch_list(formbase):
         self.embed.description = "\n".join(f"{number_to_emoji(idx)} {pd.iat[idx, 1]} {set_market_to_emoji(pd.iat[idx, 2])}" for idx in range(len(pd))) 
 
 #모의주식 관련
+#지원금 관련
+class mock_support_first(formbase):
+    def init_make(self):
+        self.embed.title = '🎉 최초 지원금 300만원이 지급되었습니다!'
+        
+class mock_support_second(formbase):
+    def init_make(self):
+        self.embed.title = '💵 일일 지원금 3만원이 지급되었습니다.'
+    def insert(self, count, *arg, **kwarg):
+        self.embed.description = f'지원 받은 횟수 : {count}회'
+        
+class mock_support_no(formbase):
+    def init_make(self):
+        self.embed.title = '📅 오늘 이미 지원금을 받으셨어요.'
+        self.embed.description = '하루 뒤에 다시 시도해 주세요.'
+        
+#매매 관련
 class mock_buy(formbase):
     def insert(self, name, count, price, total_price, *arg, **kwarg):
         self.embed.title= f"🔴 {name} {count}주 매수 완료되었습니다."
@@ -75,6 +92,12 @@ class mock_sell(formbase):
         self.embed.add_field(name='총 금액', value=total_price)
         self.embed.add_field(name='차익', value=profit)
         
+class mock_have(formbase):
+    def insert(self, author, pd, *arg, **kwarg):
+        self.embed.set_author(name=f'{author.name}님의 계좌입니다.', icon_url=str(author.avatar_url))
+        self.embed.title = f'원화 : {int(pd.iat[0, 1])}원'
+        #귀찮아서 이래놨는데 고치긴 해야할듯
+        self.embed.description = "\n".join(f'{pd.iat[idx,3]} : {int(pd.iat[idx,1])}주 {int(pd.iat[idx,2])}원' for idx in range(1,len(pd)))
 
 #가즈아 관련     
 class gazua(formbase):
