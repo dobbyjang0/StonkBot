@@ -2,6 +2,8 @@
 import sqlalchemy
 from sqlalchemy import create_engine
 from sqlalchemy import text as sql_text
+from sqlalchemy import and_
+from sqlalchemy.sql import select
 import pymysql
 import pandas
 
@@ -340,11 +342,12 @@ class SupportFundTable(Table):
 #main 함수
 def main():
     #체크용
-    if __name__ == "__main__":
-        table = AccountTable()
-        print(table.read_all(378887088524886016))
-        
-main()
+    sql = select([sql_text(""" last_get_time, get_count
+                   FROM support_fund
+                   """)]).where(sql_text('author_id = :author_id'))
+    print(sql)
 
+if __name__ == "__main__":
+    main()
     
 
