@@ -37,5 +37,6 @@ def stock_name():
 def main():
     login()
 
+main()
 
 
