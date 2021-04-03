@@ -2,6 +2,8 @@
 import sqlalchemy
 from sqlalchemy import create_engine
 from sqlalchemy import text as sql_text
+from sqlalchemy import and_
+from sqlalchemy.sql import select
 import pymysql
 import pandas
 
@@ -113,19 +115,37 @@ class LogTable(Table):
     
 
 class StockInfoTable(Table):
-    # 테이블을 만든다
-    # get_name_code.py에 있던거 긁어옴. 나중에 수정해야함
+    # csv에서 정보를 불러온다.
+    # 일단 3월 28일자 기준 파일 사용, 자동화 필요
     def create_table(self):
         
         #특히 아직까지 주식정보 자동으로 뽑는법을 모르겠음. krx거기는 자바스크립트로 되어있어서 안퍼짐
-        df = pandas.read_html('http://kind.krx.co.kr/corpgeneral/corpList.do?method=download', header=0)
+        df = pandas.read_csv("data_4021_20210328.csv", encoding='CP949')
 
-        df = df[['회사명', '종목코드']]
-        df = df.rename(columns={'회사명': 'name', '종목코드': 'code'})
-        df = df.reindex(columns=['code','name'])
+        df = df[['단축코드', '한글 종목약명', '시장구분']]
+        df = df.rename(columns={'단축코드': 'code', '한글 종목약명': 'name', '시장구분': 'market'})
         
         df.to_sql(name='stock_code', con=self.connection, if_exists='append',index=False, method='multi')
         print("저장완료")
+    
+    # 최초 테이블 생성
+    # 처음 테이블 만들 때 이것으로 만드는거 추천
+    def init_create_table(self):
+        sql = sql_text("""
+                       CREATE TABLE stock_code (
+                           `code` varchar(15) PRIMARY KEY,
+                           `name` varchar(15),
+                           `market` varchar(15)
+                           );
+                       """)
+        
+        print(self.connection)
+        try:
+            self.connection.execute(sql)
+        except:
+            error_message = "Already exist"
+            print(error_message)
+        pass
     
     # 이름을 입력하면 코드를 pandas 형식으로 찾아온다
     def read_stock_name(self,stock_name):
@@ -135,7 +155,7 @@ class StockInfoTable(Table):
     
         #실행
         sql = sql_text("""
-                       SELECT code, name
+                       SELECT code, name, market
                        FROM `stock_code`
                        WHERE name LIKE :stock_name
                        ORDER BY name ASC
@@ -167,7 +187,6 @@ class AccountTable(Table):
     
     # 계좌 테이블 생성
     def create_table(self):
-        
         sql = sql_text("""
                        CREATE TABLE account (
                            `author_id` bigint unsigned,
@@ -225,6 +244,20 @@ class AccountTable(Table):
                            """)
             result = self.connection.execute(sql, author_id=author_id, stock_code=stock_code).fetchone()
             return result
+
+    #계좌 자산을 이름과 같이 읽는다.
+    def read_all(self, author_id):
+        sql = sql_text("""
+                       SELECT ua.stock_code, ua.balance, ua.sum_value, sc.name
+                       FROM (
+                           SELECT stock_code, balance, sum_value
+                           FROM `account`
+                           WHERE author_id = :author_id) AS ua
+                       LEFT JOIN `stock_code` AS sc ON ua.stock_code = sc.code
+                       ORDER BY FIELD(stock_code, 'KRW') DESC, balance DESC;
+                       """)
+        df = pandas.read_sql_query(sql = sql, con = self.connection, params={"author_id": author_id})
+        return df
 
     # 계좌 자산 업데이트(유저, 자산종류, 수량)
     # balance는 가상화폐일경우 소수점 8자리까지, KRW나 현물 주식일 경우 정수로 입력
@@ -309,11 +342,12 @@ class SupportFundTable(Table):
 #main 함수
 def main():
     #체크용
-    if __name__ == "__main__":
-        Connection()
-        pass
+    sql = select([sql_text(""" last_get_time, get_count
+                   FROM support_fund
+                   """)]).where(sql_text('author_id = :author_id'))
+    print(sql)
 
-main()
-
+if __name__ == "__main__":
+    main()
     
 
