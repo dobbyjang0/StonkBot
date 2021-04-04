@@ -14,6 +14,8 @@ def login():
 
 # 모든종목 정보
 # 데이터프레임으로
+# market 열이 0이면 코스피 1이면 코스닥
+# ETF 열이 0이면 일반종목, 1이면 ETF
 def stock_name():
     query = XAQuery()
     in_field = {"gubun": '0'}
@@ -24,14 +26,16 @@ def stock_name():
     shcode = [query.get_outblock('t8430OutBlock', ["shcode"], i)["shcode"] for i in range(out_count)]
     hname = [query.get_outblock('t8430OutBlock', ["hname"], i)["hname"] for i in range(out_count)]
     gubun = [query.get_outblock('t8430OutBlock', ["gubun"], i)["gubun"] for i in range(out_count)]
+    etfgubun = [query.get_outblock('t8430OutBlock', ["etfgubun"], i)["etfgubun"] for i in range(out_count)]
 
     data = {
         "code": shcode,
         "name": hname,
-        "market": gubun
+        "market": gubun,
+        "ETF": etfgubun
     }
 
-    df = pd.DataFrame(data, columns = ["code", "name", "market"])
+    df = pd.DataFrame(data, columns = ["code", "name", "market", "ETF"])
     return df
 
 def main():
