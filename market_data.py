@@ -1,7 +1,11 @@
+import win32com.client
 from xing_api import XASession
 from xing_api import XAQuery
 from xing_api import XAReal
+from xing_api import Settings
+from xing_api import EventHandler
 import pandas as pd
+import threading
 import json
 
 # 로그인
@@ -38,8 +42,66 @@ def stock_name():
     df = pd.DataFrame(data, columns = ["code", "name", "market", "ETF"])
     return df
 
+
+# 실시간 체결가 수신 전용 이벤트 핸들러
+class Market(EventHandler):
+    def __init__(self):
+        super().__init__()
+        self.context = {}
+
+    def OnReceiveRealData(self, tr_code):
+        outblock_field = self.user_obj.outblock_field
+        shcode = self.com_obj.GetFieldData("OutBlock", "shcode")
+        self.context[shcode] = {}
+        if isinstance(outblock_field, str):
+            outblock_field = [outblock_field]
+        for i in outblock_field:
+            self.context[shcode][i] = self.com_obj.GetFieldData("OutBlock", i)
+        print(self.context)
+
+def market_tickdata():
+    """
+    체결시간, 전일대비구분, 전일대비, 등락율, 현지가, 시가, 고가, 저가, 누적거래량, 누적거래대금
+    """
+    real = XAReal(Market)
+    real.set_inblock("S3_", "005930")
+    real.set_outblock(["chetime", "sign", "change", "drate", "price", "open", "high", "low", "volume", "value"])
+    real.start()
+
+
+# 뉴스 전용 실시간 이벤트 핸들러
+class NewsEvent(EventHandler):
+    def __init__(self):
+        super().__init__()
+        self.context = None
+
+    def OnReceiveRealData(self, tr_code):
+        outblock_field = self.user_obj.outblock_field
+        result = {}
+        if isinstance(outblock_field, str):
+            outblock_field = [outblock_field]
+        for i in outblock_field:
+            result[i] = self.com_obj.GetFieldData("OutBlock", i)
+        code = self.com_obj.GetFieldData("OutBlock", "code")
+        if code != '':
+            max_num = len(code) // 12
+            result["code"] = [code[12 * num + 6 : 12 * (num + 1)] for num in range(max_num)]
+        else:
+            result["code"] = ''
+        self.context = result
+        print(result)
+
+def news():
+    news = XAReal(NewsEvent)
+    news.set_inblock("NWS", "NWS001", field = "nwcode")
+    news.set_outblock(["date", "time", "id", "title"])
+    news.start()
+
 def main():
     login()
+    print(stock_name())
+    news()
+
 
 main()
 
