@@ -1,7 +1,5 @@
 import win32com.client
 import pythoncom
-import time
-import json
 
 # 기본 설정
 # 싱글톤 패턴
@@ -16,12 +14,30 @@ class Settings:
         if not hasattr(cls, "_init"):
             cls._init = True
             # 디폴트 값
+            # res 파일 디폴트 경로
             self.res_directory = "C:\\eBEST\\xingAPI\\Res"
+            # XASession 이벤트 핸들러 디폴트값
+            self.event_XASession = XASessionEvents
+            # XAQuery 이벤트 핸들러 디폴트값
+            self.event_XAQuery = XAQueryEvents
+            # XAReal 이벤트 핸들러 디폴트값
+            self.event_XAReal = XARealEvents
 
     # res 파일 경로 설정
     def set_res_directory(self, path):
         self.res_directory = path
 
+    # XASession 이벤트핸들러 지정
+    def set_XASessionEvent(self, event_class):
+        self.event_XASession = event_class
+
+    # XASession 이벤트핸들러 지정
+    def set_XAQueryEvent(self, event_class):
+        self.event_XAQuery = event_class
+
+    # XASession 이벤트핸들러 지정
+    def set_XARealEvent(self, event_class):
+        self.event_XAReal = event_class
 
 
 # 기본적인 이벤트 처리 구조
@@ -55,7 +71,6 @@ class XAQueryEvents(EventHandler):
     # 요청한 조회 TR 에 대하여 서버로부터 데이터 수신시 발생하는 이벤트
     def OnReceiveData(self, tr_code):
         self.user_obj.receive_state = 1
-        # print("Receive data")
 
 
 
@@ -63,7 +78,13 @@ class XAQueryEvents(EventHandler):
 # XAReal 이벤트 처리
 class XARealEvents(EventHandler):
     def OnReceiveRealData(self, tr_code):
-        self.user_obj.receive_state = 1
+        outblock_field = self.user_obj.outblock_field
+        result = {}
+        if isinstance(outblock_field, str):
+            outblock_field = [outblock_field]
+        for i in outblock_field:
+            result[i] = self.com_obj.GetFieldData("OutBlock", i)
+        print(result)
 
 
 
@@ -74,7 +95,7 @@ class XASession:
     # 이벤트핸들러 지정: XASessionEvents
     def __init__(self):
         self.com_obj = win32com.client.Dispatch("XA_Session.XASession")
-        self.event_handler = win32com.client.WithEvents(self.com_obj, XASessionEvents)
+        self.event_handler = win32com.client.WithEvents(self.com_obj, Settings().event_XASession)
         self.event_handler.connect(self, self.com_obj)
 
         self.com_obj.ConnectServer("hts.ebestsec.co.kr", 20001)
@@ -105,7 +126,7 @@ class XAQuery:
     # 이벤트핸들러 지정: XAQueryEvents
     def __init__(self):
         self.com_obj = win32com.client.Dispatch("XA_DataSet.XAQuery")
-        self.event_handler = win32com.client.WithEvents(self.com_obj, XAQueryEvents)
+        self.event_handler = win32com.client.WithEvents(self.com_obj, Settings().event_XAQuery)
         self.event_handler.connect(self, self.com_obj)
         self.receive_state = 0
 
@@ -122,6 +143,8 @@ class XAQuery:
     # field_name은 리스트나 튜플 객체
     def get_outblock(self, outblock, field_name, index):
         result = {}
+        if isinstance(field_name, str):
+            field_name = [field_name]
         for i in field_name:
             result[i] = self.com_obj.GetFieldData(outblock, i, index)
         return result
@@ -159,42 +182,52 @@ class XAQuery:
         return state
 
 
-
-
 # 실시간 TR
 class XAReal:
     # 이벤트핸들러 지정: XARealEvents
-    def __init__(self):
+    def __init__(self, event_handler = Settings().event_XAReal):
         self.com_obj = win32com.client.Dispatch("XA_DataSet.XAReal.1")
-        self.event_handler = win32com.client.WithEvents(self.com_obj, XARealEvents)
+        self.event_handler = win32com.client.WithEvents(self.com_obj, event_handler)
         self.event_handler.connect(self, self.com_obj)
         self.receive_state = 0
+        self.outblock_field = None
+
 
     # inblock 세팅
     # (블록의 필드명, 데이터)
-    def set_inblock(self, tr_code, *args):
+    def set_inblock(self, tr_code, shcode, field = "shcode"):
         res_file = Settings().res_directory + "\\" + tr_code + ".res"
-        self.com_obj.ResFileName(res_file)
-        self.com_obj.SetFieldData("InBlock", *args)
+        self.com_obj.LoadFromResFile(res_file)
+        if isinstance(shcode, str):
+            shcode = [shcode]
+        for i in shcode:
+            self.com_obj.SetFieldData("InBlock", field, i)
+
 
     # outblock 세팅
     # (필요한 데이터의 필드명)
-    def get_outblock(self, field_name):
-        result = {}
-        for i in field_name:
-            result[i] = self.com_obj.GetFieldData("OutBlock", i)
-        return result
+    def set_outblock(self, field_name):
+        self.outblock_field = field_name
+
+    # outblock 의 전체 데이터 취득
+    # def get_all(self):
+    #     result = self.com_obj.GelBlockData("OutBlock")
+    #     return result
 
     # 특정 종목의 실시간 데이터 수신 해제
     def del_realdata(self, shcode):
-        self.com_obj.UnadviseRealDataWithKey(shcode)
+        if isinstance(shcode, str):
+            shcode = [shcode]
+        for i in shcode:
+            self.com_obj.UnadviseRealDataWithKey(i)
 
     # 등록된 실시간 데이터 전부 해제
     def del_all(self):
         self.com_obj.UnadviseRealData()
 
-    # 실시간 등록
-    def run(self):
+    # 실시간 감시 시작
+    def start(self):
         self.com_obj.AdviseRealData()
         while self.receive_state == 0:
             pythoncom.PumpWaitingMessages()
+
