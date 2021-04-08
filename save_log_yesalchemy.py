@@ -337,7 +337,98 @@ class SupportFundTable(Table):
                        where author_id = :author_id
                        """)
                        
-        self.connection.execute(sql, author_id=author_id) 
+        self.connection.execute(sql, author_id=author_id)
+
+# 실시간 시세가 저장되는 테이블
+class KRXRealData(Table):
+    """
+    실시간 시세를 저장하는 테이블
+    """
+    def create_table(self):
+        """
+        테이블 생성
+        """
+        sql = sql_text("""
+                       CREATE TABLE KRX_real_data(
+                           `shcode` varchar(8) PRIMARY KEY,
+                           `chetime` varchar(8),
+                           `sign` tinyint,
+                           `change` int,
+                           `drate` decimal(5, 2),
+                           `price` int,
+                           `open` int,
+                           `high` int,
+                           `low` int,
+                           `volume` int,
+                           `value` bigint
+                           );
+                       """)
+
+        try:
+            self.connection.execute(sql)
+        except:
+            error_message = "refu"
+            print(error_message)
+
+    def update(self, context):
+        """
+        테이블 업데이트,
+        값이 존재하면 업데이트하고 존재하지 않는다면 insert into실행
+
+        Args:
+            context: 테이블에 업데이트 할 실시간 시세 데이터
+            {'shcode': '035720', 'chetime': '134330', 'sign': '2', 'change': '1000', 'drate': '0.18', 'price': '543000', 'open': '539000', 'high': '561000', 'low': '534000', 'volume': '687611', 'value': '377637'}
+        """
+        sql = sql_text("""
+                       UPDATE KRX_real_data
+                       SET 
+                       chetime = :chetime, 
+                       sign = :sign, 
+                       change = :change, 
+                       drate = :drate, 
+                       price = :price,
+                       open = :open,
+                       high = :high,
+                       low = :low,
+                       volume = :volume,
+                       value = :value
+                       WHERE shcode = :shcode
+                       IF @@ROWCOUNT=0
+                       INSERT INTO KRX_real_data(shcode, chetime, sign, change, drate, price, open, high, low, volume, value)
+                       VALUES(:shcode, :chetime, :sign, :change, :drate, :price, :open, :high, :low, :volume, :value);
+                       """)
+        self.connection.execute(sql,
+                                shcode = context["shcode"],
+                                chetime = context["chetime"],
+                                sign = context["sign"],
+                                change = context["change"],
+                                drate = context["drate"],
+                                price = context["price"],
+                                open = context["open"],
+                                high = context["high"],
+                                low = context["low"],
+                                volume = context["volume"],
+                                value = context["value"],
+                                )
+
+    def read(self, shcode):
+        """
+        종목코드를 기준으로 실시간 데이터를 가져온다
+
+        Args:
+            shcode: 6자리 단축코드(str)
+            
+        Returns:
+            종목코드에 해당하는 실시간 시세데이터
+        """
+        sql = sql_text("""
+                       SELECT *
+                       FROM `KRX_real_data`
+                       WHERE shcode = :shcode;
+                       """)
+        result = self.connection.execute(sql, shcode = shcode).fetchone()
+        return result
+
 
 #main 함수
 def main():
