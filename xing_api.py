@@ -1,9 +1,22 @@
 import win32com.client
 import pythoncom
 
+"""
+doc 쓰기 귀찮다
+큰 맥락만 써놓음 일단
+"""
+
 # 기본 설정
-# 싱글톤 패턴
 class Settings:
+    """
+    전역 설정 클래스
+
+    Attributes:
+        res_directory: .res 파일이 위치한 디렉토리(str)
+        event_XASession: XASession 클래스의 기본 이벤트 핸들러(class)
+        event_XAQuery: XAQuery 클래스의 기본 이벤트 핸들러(class)
+        event_XAReal: XAReal 클래스의 기본 이벤트 핸들러(class)
+    """
     def __new__(cls):
         if not hasattr(cls, "_instance"):
             cls._instance = super().__new__(cls)
@@ -25,6 +38,12 @@ class Settings:
 
     # res 파일 경로 설정
     def set_res_directory(self, path):
+        """
+        .res 파일이 위치한 디렉토리 설정
+
+        Args:
+            path: .res 파일이 위치한 디렉토리(str)
+        """
         self.res_directory = path
 
     # XASession 이벤트핸들러 지정
@@ -42,6 +61,10 @@ class Settings:
 
 # 기본적인 이벤트 처리 구조
 class EventHandler:
+    """
+    이벤트핸들러 기본 구조
+    모든 이베스트 api 이벤트 핸들러는 이 클래스를 상속받아야 한다.
+    """
     def __init__(self):
         self.user_obj = None
         self.com_obj = None
@@ -53,6 +76,9 @@ class EventHandler:
 
 # XASession 이벤트 처리
 class XASessionEvents(EventHandler):
+    """
+    XASession 클래스의 이벤트 처리
+    """
     # login 메서드의 이벤트 처리
     def OnLogin(self, code, msg):
         if code == "0000":
@@ -68,6 +94,9 @@ class XASessionEvents(EventHandler):
 
 # XAQuery 이벤트 처리
 class XAQueryEvents(EventHandler):
+    """
+    XAQuery 클래스의 이벤트 처리
+    """
     # 요청한 조회 TR 에 대하여 서버로부터 데이터 수신시 발생하는 이벤트
     def OnReceiveData(self, tr_code):
         self.user_obj.receive_state = 1
@@ -77,6 +106,9 @@ class XAQueryEvents(EventHandler):
 
 # XAReal 이벤트 처리
 class XARealEvents(EventHandler):
+    """
+    XAReal 클래스의 이벤트 처리
+    """
     def OnReceiveRealData(self, tr_code):
         outblock_field = self.user_obj.outblock_field
         result = {}
@@ -92,8 +124,15 @@ class XARealEvents(EventHandler):
 # 서버연결, 로그인 등
 # 로그아웃은 증권사에서 지원하지 않음
 class XASession:
-    # 이벤트핸들러 지정: XASessionEvents
+    """
+     로그인, 연결상태 등의 작업을 하는 클래스
+
+     Attributes:
+         login_status: 로그인 상태를 처리하기 위한 인스턴스 변수
+    """
+
     def __init__(self):
+        # 이베스트에서 제공하는 com 방식의 api 에 연결
         self.com_obj = win32com.client.Dispatch("XA_Session.XASession")
         self.event_handler = win32com.client.WithEvents(self.com_obj, Settings().event_XASession)
         self.event_handler.connect(self, self.com_obj)
@@ -103,6 +142,20 @@ class XASession:
 
     # 로그인
     def login(self, user_info, server_type = 0):
+        """
+        이베스트 api 에 로그인하는 메서드
+
+        Args:
+            user_info:
+                로그인 정보가 있는 딕셔너리 객체
+                {"user_id" : "이베스트증권 ID",
+                "user_pw" : "이베스트증권 비밀번호",
+                "cert_pw" : "공인인증서 비밀번호"}
+            server_type:
+                0 (실서버, 기본값)
+                1 (모의서버)
+
+        """
         user_id = user_info['user_id']
         user_pw = user_info['user_pw']
         cert_pw = user_info['cert_pw']
@@ -112,10 +165,27 @@ class XASession:
     
     # 보유중인 계좌 개수 리턴
     def account_count(self):
+        """
+        보유중인 계좌 개수를 리턴함
+
+        Returns:
+            int type
+            보유중인 계좌 개수를 정수로 반환
+        """
         return self.com_obj.GetAccountListCount()
 
     # 계좌번호 목록 중에서 인덱스에 해당하는 계좌번호 리턴
     def account_num(self, index):
+        """
+        보유중인 계좌 개수를 리턴함
+
+        Args:
+            index: 계좌 인덱스(int)
+
+        Returns:
+            str type
+            인덱스에 해당하는 계좌번호 리턴
+        """
         return self.com_obj.GetAccountList(index)
 
 
@@ -123,6 +193,15 @@ class XASession:
 # 동일 TR에 종목코드만 바꾸어 다수의 조회를 요청하려면 종목코드 수만큼 객체를 생성해야함
 # (여러종목을 동시조회하는 자체 메서드를 제공하지 않음)
 class XAQuery:
+    """
+    TR요청, 수신을 위한 클래스
+
+    set_inblock -> request -> get_outblock
+    의 순서로 진행하면 된다.
+
+    Attributes:
+        receive_state: 데이터 수신 상태를 확인하기 위한 인스턴스 변수
+    """
     # 이벤트핸들러 지정: XAQueryEvents
     def __init__(self):
         self.com_obj = win32com.client.Dispatch("XA_DataSet.XAQuery")
@@ -133,6 +212,15 @@ class XAQuery:
     # tr inblock 값 지정
     # attr 는 dict 객체
     def set_inblock(self, tr_code, attr):
+        """
+        TR 요청 전 요청 양식을 작성한다
+
+        Args:
+            tr_code: tr코드명(str)
+            attr: {'inblock 필드명': value} 형식의 dict 객체
+
+        !todo 이거 나중에 수정할 수도 있음
+        """
         res_file = Settings().res_directory + "\\" + tr_code + ".res"
         inblock = tr_code + "InBlock"
         self.com_obj.LoadFromResFile(res_file)
@@ -184,6 +272,19 @@ class XAQuery:
 
 # 실시간 TR
 class XAReal:
+    """
+    실시간 데이터 수신을 위한 클래스
+
+    set_inlock -> set_outblock -> start
+    의 순서로 진행하면 된다.
+    EventHandler 를 상속받은 새로운 클래스를 이벤트 핸들러로 지정하여 원하는 작업을 수행한다.
+    !todo 이벤트핸들러 관련 디자인 패턴 개선
+
+
+    Attributes:
+        receive_state: 데이터 수신 상태를 확인하기 위한 인스턴스 변수
+        event_handler: 실시간 데이터 수신 이벤트를 처리할 이벤트 핸들러 지정(class)
+    """
     # 이벤트핸들러 지정: XARealEvents
     def __init__(self, event_handler = Settings().event_XAReal):
         self.com_obj = win32com.client.Dispatch("XA_DataSet.XAReal.1")
@@ -202,7 +303,7 @@ class XAReal:
             shcode = [shcode]
         for i in shcode:
             self.com_obj.SetFieldData("InBlock", field, i)
-
+            self.com_obj.AdviseRealData()
 
     # outblock 세팅
     # (필요한 데이터의 필드명)
@@ -227,7 +328,6 @@ class XAReal:
 
     # 실시간 감시 시작
     def start(self):
-        self.com_obj.AdviseRealData()
         while self.receive_state == 0:
             pythoncom.PumpWaitingMessages()
 
