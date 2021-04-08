@@ -7,7 +7,6 @@ import pandas as pd
 import json
 import multiprocessing
 
-# !todo 멀티프로세싱으로 실시간 데이터 수신 구현할것
 # 로그인
 def login():
     """
