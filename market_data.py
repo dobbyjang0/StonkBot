@@ -188,3 +188,5 @@ def main():
         process_kospi.start()
         # process_kosdaq.start()
         process_news.start()
+
+main()

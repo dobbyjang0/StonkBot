@@ -331,3 +331,8 @@ class XAReal:
         while self.receive_state == 0:
             pythoncom.PumpWaitingMessages()
 
+def main():
+    print("테스트 : 메인으로 실행")
+
+if __name__ == "__main__":
+    main()
