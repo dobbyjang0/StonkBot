@@ -7,6 +7,8 @@ import stock
 import save_log_yesalchemy as bot_table
 from datetime import date
 from embed_form import embed_factory as ef
+import market_data
+import multiprocessing
 
 nest_asyncio.apply()
 
@@ -380,5 +382,23 @@ def main():
         with open("bot_token.txt", mode='r', encoding='utf-8') as txt:
             bot_token = txt.read()
         bot.run(bot_token)
-        
+
+        """
+        실시간 시세, 뉴스 데이터 받는 부분
+        api 세팅 완료하면 이거 주석 해제하고 사용할것
+        사용전에 save_log_yesalchemy.KRXRealData 클래스의 create_table 꼭 실행할것
+        """
+        # market_data.login()
+        # print(market_data.stock_name())
+        # process_kospi = multiprocessing.Process(target=market_data.kospi_tickdata)
+        # process_kosdaq = multiprocessing.Process(target=market_data.kosdaq_tickdata)
+        # process_kospi.start()
+        # process_kosdaq.start()
+
+        """
+        뉴스데이터는 아직 어떻게 처리할지 안정해서 일단 냅둠. 이건 실행시키지 말것
+        """
+        # process_news = multiprocessing.Process(target=market_data.news)
+        # process_news.start()
+
 main()
