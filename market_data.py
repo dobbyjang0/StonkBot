@@ -186,5 +186,7 @@ def main():
         process_kosdaq = multiprocessing.Process(target = kosdaq_tickdata)
         # process_news = multiprocessing.Process(target = news)
         process_kospi.start()
-        process_kosdaq.start()
-        # process_news.start()
+        # process_kosdaq.start()
+        process_news.start()
+
+main()
