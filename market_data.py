@@ -35,7 +35,7 @@ class MarketEvent(EventHandler):
             outblock_field = [outblock_field]
         for i in outblock_field:
             result[i] = self.com_obj.GetFieldData("OutBlock", i)
-        KRXRealData.update(result)
+        KRXRealData().update(result)
         print(result)
 
 
