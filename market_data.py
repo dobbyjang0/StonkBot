@@ -35,8 +35,8 @@ class MarketEvent(EventHandler):
             outblock_field = [outblock_field]
         for i in outblock_field:
             result[i] = self.com_obj.GetFieldData("OutBlock", i)
-        KRXRealData().update(result)
         print(result)
+        KRXRealData().update(result)
 
 
 # 실시간 체결가 수신 전용 클래스
@@ -94,7 +94,7 @@ def _shcode(market_type):
 def kospi_tickdata():
     """
     KOSPI 모든종목
-    종목코드, 체결시간, 전일대비구분, 전일대비, 등락율, 현지가, 시가, 고가, 저가, 누적거래량, 누적거래대금
+    종목코드, 체결시간, 전일대비구분, 전일대비, 등락율, 현재가, 시가, 고가, 저가, 누적거래량, 누적거래대금
     실시간 감시, db에 업데이트
     """
     login()
@@ -107,7 +107,7 @@ def kospi_tickdata():
 def kosdaq_tickdata():
     """
     KOSDAQ 모든종목
-    종목코드, 체결시간, 전일대비구분, 전일대비, 등락율, 현지가, 시가, 고가, 저가, 누적거래량, 누적거래대금
+    종목코드, 체결시간, 전일대비구분, 전일대비, 등락율, 현재가, 시가, 고가, 저가, 누적거래량, 누적거래대금
     실시간 감시, db에 업데이트
     """
     login()
@@ -183,8 +183,8 @@ def main():
         login()
         print(stock_name())
         process_kospi = multiprocessing.Process(target = kospi_tickdata)
-        # process_kosdaq = multiprocessing.Process(target = kosdaq_tickdata)
-        process_news = multiprocessing.Process(target = news)
+        process_kosdaq = multiprocessing.Process(target = kosdaq_tickdata)
+        # process_news = multiprocessing.Process(target = news)
         process_kospi.start()
-        # process_kosdaq.start()
-        process_news.start()
+        process_kosdaq.start()
+        # process_news.start()
