@@ -349,7 +349,7 @@ class KRXRealData(Table):
         테이블 생성
         """
         sql = sql_text("""
-                       CREATE TABLE KRX_real_data(
+                       CREATE TABLE krx_real_data(
                            `shcode` varchar(8) PRIMARY KEY,
                            `chetime` varchar(8),
                            `sign` tinyint,
@@ -379,24 +379,33 @@ class KRXRealData(Table):
             context: 테이블에 업데이트 할 실시간 시세 데이터
             {'shcode': '035720', 'chetime': '134330', 'sign': '2', 'change': '1000', 'drate': '0.18', 'price': '543000', 'open': '539000', 'high': '561000', 'low': '534000', 'volume': '687611', 'value': '377637'}
         """
+
+        # ms sql query
+        #
+        # sql = sql_text("""
+        #                UPDATE KRX_real_data
+        #                SET
+        #                chetime = :chetime,
+        #                sign = :sign,
+        #                change = :change,
+        #                drate = :drate,
+        #                price = :price,
+        #                open = :open,
+        #                high = :high,
+        #                low = :low,
+        #                volume = :volume,
+        #                value = :value
+        #                WHERE shcode = :shcode
+        #                IF @@ROWCOUNT=0
+        #                INSERT INTO KRX_real_data(shcode, chetime, sign, change, drate, price, open, high, low, volume, value)
+        #                VALUES(:shcode, :chetime, :sign, :change, :drate, :price, :open, :high, :low, :volume, :value);
+        #                """)
+
         sql = sql_text("""
-                       UPDATE KRX_real_data
-                       SET 
-                       chetime = :chetime, 
-                       sign = :sign, 
-                       change = :change, 
-                       drate = :drate, 
-                       price = :price,
-                       open = :open,
-                       high = :high,
-                       low = :low,
-                       volume = :volume,
-                       value = :value
-                       WHERE shcode = :shcode
-                       IF @@ROWCOUNT=0
-                       INSERT INTO KRX_real_data(shcode, chetime, sign, change, drate, price, open, high, low, volume, value)
-                       VALUES(:shcode, :chetime, :sign, :change, :drate, :price, :open, :high, :low, :volume, :value);
+                       INSERT INTO krx_real_data VALUES(:shcode, :chetime, :sign, :change, :drate, :price, :open, :high, :low, :volume, :value)
+                       ON DUPLICATE KEY UPDATE `chetime` = :chetime, `sign` = :sign, `change` = :change, `drate` = :drate, `price` = :price, `open` = :open, `high` = :high, `low` = :low, `volume` = :volume, `value` = :value;
                        """)
+
         self.connection.execute(sql,
                                 shcode = context["shcode"],
                                 chetime = context["chetime"],
@@ -423,7 +432,7 @@ class KRXRealData(Table):
         """
         sql = sql_text("""
                        SELECT *
-                       FROM `KRX_real_data`
+                       FROM `krx_real_data`
                        WHERE shcode = :shcode;
                        """)
         result = self.connection.execute(sql, shcode = shcode).fetchone()
