@@ -305,8 +305,9 @@ async def serch_stock_by_bot(ctx, stock_name):
         stock_code = stock_list_pd.iat[0, 0]
         stock_real_name = stock_list_pd.iat[0, 1]
         stock_market = stock_list_pd.iat[0, 2]
+        is_ETF = stock_list_pd.iat[0, 3]
         
-        return stock_code, stock_real_name, stock_market
+        return stock_code, stock_real_name, stock_market, is_ETF
     
     # 1개 이상일 경우
     else:
@@ -316,7 +317,7 @@ async def serch_stock_by_bot(ctx, stock_name):
         def check(message: discord.Message):
             return message.channel == ctx.channel and message.author == ctx.author
         
-        stock_code, stock_real_name, stock_market = None, None, None
+        stock_code, stock_real_name, stock_market, is_ETF = None, None, None, None
         
         try:
             # 숫자 입력을 받는다
@@ -338,13 +339,14 @@ async def serch_stock_by_bot(ctx, stock_name):
                 stock_code = stock_list_pd.iat[stock_index, 0]
                 stock_real_name = stock_list_pd.iat[stock_index, 1]
                 stock_market = stock_list_pd.iat[stock_index, 2]
+                is_ETF = stock_list_pd.iat[stock_index, 3]
                 
             await check_number_msg.delete()
             
         finally:
             # 목록 지우고 출력
             await list_msg.delete()
-            return stock_code, stock_real_name, stock_market
+            return stock_code, stock_real_name, stock_market, is_ETF
 
  
 #주식 코드인지 아닌지 확인
@@ -359,7 +361,7 @@ async def get_stock_info(ctx, stock_name):
     if is_stock_code(stock_name):
         stock_code = stock_name
     else:
-        stock_code, stock_real_name, stock_market = await serch_stock_by_bot(ctx, stock_name)
+        stock_code, stock_real_name, stock_market, is_ETF = await serch_stock_by_bot(ctx, stock_name)
         if stock_code == None:
             return None
     
@@ -389,7 +391,6 @@ def main():
         사용전에 save_log_yesalchemy.KRXRealData 클래스의 create_table 꼭 실행할것
         """
         # market_data.login()
-        # print(market_data.stock_name())
         # process_kospi = multiprocessing.Process(target=market_data.kospi_tickdata)
         # process_kosdaq = multiprocessing.Process(target=market_data.kosdaq_tickdata)
         # process_kospi.start()

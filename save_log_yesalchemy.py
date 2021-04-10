@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+from xing_api import XASession
+from xing_api import XAQuery
+from xing_api import XAReal
+from xing_api import EventHandler
 import sqlalchemy
 from sqlalchemy import create_engine
 from sqlalchemy import text as sql_text
@@ -115,18 +119,88 @@ class LogTable(Table):
     
 
 class StockInfoTable(Table):
-    # csv에서 정보를 불러온다.
-    # 일단 3월 28일자 기준 파일 사용, 자동화 필요
-    def create_table(self):
-        
-        #특히 아직까지 주식정보 자동으로 뽑는법을 모르겠음. krx거기는 자바스크립트로 되어있어서 안퍼짐
-        df = pandas.read_csv("data_4021_20210328.csv", encoding='CP949')
+    """
+    경고:
+        이 클래스를 사용하여 종목정보 업데이트 시 반드시 api 에 로그인 한 상태여야 함
+    """
+    # 모든종목 정보
+    # 데이터프레임으로
+    # market 열이 0이면 코스피 1이면 코스닥
+    # ETF 열이 0이면 일반종목, 1이면 ETF
+    def _stock_name(self):
+        """
+        kospi, kosdaq에 존재하는 모든 종목에 대한 정보를 pandas 데이터프레임 객체로 반환
 
-        df = df[['단축코드', '한글 종목약명', '시장구분']]
-        df = df.rename(columns={'단축코드': 'code', '한글 종목약명': 'name', '시장구분': 'market'})
-        
-        df.to_sql(name='stock_code', con=self.connection, if_exists='append',index=False, method='multi')
+        Returns:
+            pandas dataframe object
+
+                   code            name    market   ETF
+            0     000020          동화약품   KOSPI   주식
+            1     000040         KR모터스   KOSPI   주식
+            2     000050            경방   KOSPI   주식
+            3     000060         메리츠화재   KOSPI   주식
+            ...      ...           ...    ...  ..
+
+            Columns:
+                code: 종목코드
+                name: 종목명
+                market: 시장구분
+                ETF: ETF 구분
+        """
+        query = XAQuery()
+        in_field = {"gubun": '0'}
+        query.set_inblock('t8430', in_field)
+        query.request()
+        out_count = query.get_count('t8430OutBlock')
+
+        shcode = [query.get_outblock('t8430OutBlock', "shcode", i)["shcode"] for i in range(out_count)]
+        hname = [query.get_outblock('t8430OutBlock', "hname", i)["hname"] for i in range(out_count)]
+        gubun = ["KOSPI" if query.get_outblock('t8430OutBlock', "gubun", i)["gubun"] == '1' else "KOSDAQ" for i in
+                 range(out_count)]
+        etfgubun = ["주식" if query.get_outblock('t8430OutBlock', "etfgubun", i)["etfgubun"] == '0' else "ETF" for i in
+                    range(out_count)]
+
+        data = {
+            "code": shcode,
+            "name": hname,
+            "market": gubun,
+            "ETF": etfgubun
+        }
+
+        df = pandas.DataFrame(data, columns=["code", "name", "market", "ETF"])
+        return df
+
+    # 종목정보 업데이트
+    # 일단 3월 28일자 기준 파일 사용, 자동화 필요
+    # └-> 2021.04.10 api 로 대체함
+    def update_table(self):
+        """
+        종목정보 업데이트
+
+        !todo 하루 한번 08:20 에 실행되도록 할것
+        """
+
+        # csv파일 읽어오는 방식
+        #특히 아직까지 주식정보 자동으로 뽑는법을 모르겠음. krx거기는 자바스크립트로 되어있어서 안퍼짐
+        # df = pandas.read_csv("data_4021_20210328.csv", encoding='CP949')
+        #
+        # df = df[['단축코드', '한글 종목약명', '시장구분']]
+        # df = df.rename(columns={'단축코드': 'code', '한글 종목약명': 'name', '시장구분': 'market'})
+        #
+        # df.to_sql(name='stock_code', con=self.connection, if_exists='append',index=False, method='multi')
+        # print("저장완료")
+
+        # 이전 데이터 모두 삭제
+        sql = sql_text("""
+                       DELETE FROM stock_code;
+                       """)
+        self.connection.execute(sql)
+
+        # api 사용하여 종목정보 read
+        df = self._stock_name()
+        df.to_sql(name='stock_code', con=self.connection, if_exists='replace',index=False, method='multi')
         print("저장완료")
+
     
     # 최초 테이블 생성
     # 처음 테이블 만들 때 이것으로 만드는거 추천
@@ -135,7 +209,8 @@ class StockInfoTable(Table):
                        CREATE TABLE stock_code (
                            `code` varchar(15) PRIMARY KEY,
                            `name` varchar(15),
-                           `market` varchar(15)
+                           `market` varchar(15),
+                           `ETF` varchar(5)
                            );
                        """)
         
@@ -155,7 +230,7 @@ class StockInfoTable(Table):
     
         #실행
         sql = sql_text("""
-                       SELECT code, name, market
+                       SELECT code, name, market, ETF
                        FROM `stock_code`
                        WHERE name LIKE :stock_name
                        ORDER BY name ASC
