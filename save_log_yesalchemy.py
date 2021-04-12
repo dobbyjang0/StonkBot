@@ -116,7 +116,69 @@ class LogTable(Table):
         result = self.connection.execute(sql, **input_variable)
     
         return result
+
+    #가즈아 로그를 db에 넣는다.
+    def insert_gazua_log(self, guild_id, channel_id, author_id, stock_code, stock_value, stock_value_want):
+        input_variable={"guild_id" : guild_id, "channel_id" : channel_id,
+                        "author_id" : author_id, "stock_code" : stock_code,
+                        "stock_value_want" : stock_value_want
+                        }
+        
+        #에러 처리
+        for i in [guild_id, channel_id, author_id]:
+            if type(i) != int:
+                raise TypeError("guild_id, channel_id, author_id should be 'int' type")
+            
+        #실행
+        sql = sql_text("""
+                       INSERT INTO input_log (
+                           time, type, guild_id, channel_id, author_id, stock_code, stock_value_sub
+                       )
+                       VALUES (default, '가즈아', :guild_id, :channel_id, :author_id, :stock_code, :stock_value_want)
+                       """)
+
+        result = self.connection.execute(sql, **input_variable)
     
+        return result
+# 걍 가즈아 갯수 세는 용도
+class GazuaCountTable(Table):
+    #테이블을 만든다
+    def create_table(self):
+        sql = sql_text("""
+                       CREATE TABLE gazua_count (
+                           `stock_code` varchar(15) PRIMARY KEY,
+                           `count` int unsigned
+                           );
+                       """)
+        
+        print(self.connection)
+        try:
+            self.connection.execute(sql)
+        except:
+            error_message = "Already exist"
+            print(error_message)
+    
+    def insert_update(self, stock_code):
+        sql = sql_text("""
+                       INSERT INTO gazua_count (stock_code, count)
+                       VALUES (:stock_code, 1)
+                       ON DUPLICATE KEY UPDATE count=count+1
+                       """)
+                       
+        result = self.connection.execute(sql, stock_code=stock_code)
+    
+        return result
+    
+    def read(self, stock_code):
+        
+        sql = sql_text("""
+                       SELECT count
+                       FROM `gazua_count`
+                       WHERE stock_code = :stock_code;
+                       """)
+        result = self.connection.execute(sql, stock_code=stock_code).fetchone()
+        return result
+        
 
 class StockInfoTable(Table):
     """

@@ -92,6 +92,7 @@ async def 주식(ctx,stock_name="도움",chart_type="일"):
     return
 
 #가즈아 기능
+#나중에 가격도 검색해서 로그에 넣게 바꾸기?
 @bot.command()
 async def 가즈아(ctx, stock_name="삼성전자", stock_price=None):
     #주식 검색
@@ -105,8 +106,19 @@ async def 가즈아(ctx, stock_name="삼성전자", stock_price=None):
             await ctx.send("주식 가격이나 층수를 입력해주세요")
             return
     
+    #로그에 넣는다
+    input_variable={"guild_id" : ctx.guild.id, "channel_id" : ctx.channel.id,
+                        "author_id" : ctx.author.id, "stock_code" : stock_code,
+                        "stock_value_want" : stock_price
+                        }
+    
+    bot_table.LogTable().insert_gazua_log(**input_variable)
+    
+    gazua_count = bot_table.GazuaCountTable().read(stock_code)
+    bot_table.GazuaCountTable().insert_update(stock_code)
+    
     #주식코드를 기본키로 해서 추가?
-    await ctx.send(embed=ef("gazua", stock_real_name, stock_price).get)
+    await ctx.send(embed=ef("gazua", stock_real_name, gazua_count, stock_price).get)
     return
     
 # 모의 주식 관련 커맨드
