@@ -2,10 +2,10 @@ from xing_api import XASession
 from xing_api import XAQuery
 from xing_api import XAReal
 from xing_api import EventHandler
-import pandas as pd
 import json
 from save_log_yesalchemy import StockInfoTable
 from save_log_yesalchemy import KRXRealData
+import pandas as pd
 import multiprocessing
 
 # 로그인
@@ -36,7 +36,7 @@ class MarketEvent(EventHandler):
             outblock_field = [outblock_field]
         for i in outblock_field:
             result[i] = self.com_obj.GetFieldData("OutBlock", i)
-        print(result)
+        # print(result)
         KRXRealData().update(result)
 
 
@@ -182,11 +182,11 @@ def main():
     if __name__ == "__main__":
         login()
         StockInfoTable().update_table()
-        # process_kospi = multiprocessing.Process(target = kospi_tickdata)
-        # process_kosdaq = multiprocessing.Process(target = kosdaq_tickdata)
+        process_kospi = multiprocessing.Process(target = kospi_tickdata)
+        process_kosdaq = multiprocessing.Process(target = kosdaq_tickdata)
         # process_news = multiprocessing.Process(target = news)
-        # process_kospi.start()
-        # process_kosdaq.start()
+        process_kospi.start()
+        process_kosdaq.start()
         # process_news.start()
 
 main()

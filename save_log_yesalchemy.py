@@ -198,6 +198,7 @@ class StockInfoTable(Table):
 
         # api 사용하여 종목정보 read
         df = self._stock_name()
+        print(df)
         df.to_sql(name='stock_code', con=self.connection, if_exists='replace',index=False, method='multi')
         print("저장완료")
 
@@ -481,19 +482,21 @@ class KRXRealData(Table):
                        ON DUPLICATE KEY UPDATE `chetime` = :chetime, `sign` = :sign, `change` = :change, `drate` = :drate, `price` = :price, `open` = :open, `high` = :high, `low` = :low, `volume` = :volume, `value` = :value;
                        """)
 
-        self.connection.execute(sql,
-                                shcode = context["shcode"],
-                                chetime = context["chetime"],
-                                sign = context["sign"],
-                                change = context["change"],
-                                drate = context["drate"],
-                                price = context["price"],
-                                open = context["open"],
-                                high = context["high"],
-                                low = context["low"],
-                                volume = context["volume"],
-                                value = context["value"],
-                                )
+
+        self.connection.execute(sql, **context)
+        # self.connection.execute(sql,
+        #                         shcode = context["shcode"],
+        #                         chetime = context["chetime"],
+        #                         sign = context["sign"],
+        #                         change = context["change"],
+        #                         drate = context["drate"],
+        #                         price = context["price"],
+        #                         open = context["open"],
+        #                         high = context["high"],
+        #                         low = context["low"],
+        #                         volume = context["volume"],
+        #                         value = context["value"],
+        #                         )
 
     def read(self, shcode):
         """
@@ -517,10 +520,13 @@ class KRXRealData(Table):
 #main 함수
 def main():
     #체크용
-    sql = select([sql_text(""" last_get_time, get_count
-                   FROM support_fund
-                   """)]).where(sql_text('author_id = :author_id'))
-    print(sql)
+    # sql = select([sql_text(""" last_get_time, get_count
+    #                FROM support_fund
+    #                """)]).where(sql_text('author_id = :author_id'))
+    # print(sql)
+    StockInfoTable().init_create_table()
+    StockInfoTable().update_table()
+
 
 if __name__ == "__main__":
     main()
