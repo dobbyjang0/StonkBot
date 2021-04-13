@@ -118,7 +118,7 @@ class LogTable(Table):
         return result
 
     #가즈아 로그를 db에 넣는다.
-    def insert_gazua_log(self, guild_id, channel_id, author_id, stock_code, stock_value, stock_value_want):
+    def insert_gazua_log(self, guild_id, channel_id, author_id, stock_code, stock_value_want):
         input_variable={"guild_id" : guild_id, "channel_id" : channel_id,
                         "author_id" : author_id, "stock_code" : stock_code,
                         "stock_value_want" : stock_value_want
@@ -260,13 +260,13 @@ class StockInfoTable(Table):
 
         # api 사용하여 종목정보 read
         df = self._stock_name()
-        df.to_sql(name='stock_code', con=self.connection, if_exists='replace',index=False, method='multi')
+        df.to_sql(name='stock_code', con=self.connection, if_exists='replace', index=False, method='multi')
         print("저장완료")
 
     
     # 최초 테이블 생성
     # 처음 테이블 만들 때 이것으로 만드는거 추천
-    def init_create_table(self):
+    def create_table(self):
         sql = sql_text("""
                        CREATE TABLE stock_code (
                            `code` varchar(15) PRIMARY KEY,
@@ -578,11 +578,10 @@ class KRXRealData(Table):
 
 #main 함수
 def main():
-    #체크용
-    sql = select([sql_text(""" last_get_time, get_count
-                   FROM support_fund
-                   """)]).where(sql_text('author_id = :author_id'))
-    print(sql)
+    import market_data
+    market_data.login()
+    StockInfoTable().update_table()
+    
 
 if __name__ == "__main__":
     main()

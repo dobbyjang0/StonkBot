@@ -20,7 +20,20 @@ async def on_ready():
     print("--- 연결 성공 ---")
     print(f"봇 이름: {bot.user.name}")
     print(f"ID: {bot.user.id}")
-    return
+    
+    """
+    실시간 시세, 뉴스 데이터 받는 부분
+    api 세팅 완료하면 이거 주석 해제하고 사용할것
+    사용전에 save_log_yesalchemy.KRXRealData 클래스의 create_table 꼭 실행할것
+    """
+    
+    market_data.login()
+    process_kospi = multiprocessing.Process(target=market_data.kospi_tickdata)
+    process_kosdaq = multiprocessing.Process(target=market_data.kosdaq_tickdata)
+    process_kospi.start()
+    process_kosdaq.start()
+    
+    print('실시간 데이터 시작')
     
     
 @bot.command()
@@ -91,12 +104,18 @@ async def 주식(ctx,stock_name="도움",chart_type="일"):
     await ctx.send(embed=ef("serch_result",**serching_stock.to_dict()).get)
     return
 
+@bot.command()
+async def 주식2(ctx, stock_name="도움"):
+    stock_code, stock_real_name, stock_market, is_ETF = await serch_stock_by_bot(ctx, stock_name)
+    result = bot_table.KRXRealData().read(stock_code)
+    await ctx.send(result)
+
 #가즈아 기능
 #나중에 가격도 검색해서 로그에 넣게 바꾸기?
 @bot.command()
 async def 가즈아(ctx, stock_name="삼성전자", stock_price=None):
     #주식 검색
-    stock_code, stock_real_name, __ = await serch_stock_by_bot(ctx, stock_name)
+    stock_code, stock_real_name, __, __ = await serch_stock_by_bot(ctx, stock_name)
     
     if stock_code == None:
         return
@@ -311,7 +330,7 @@ async def serch_stock_by_bot(ctx, stock_name):
     # 0개일 경우
     if stock_list_len == 0:
         await ctx.send("데이터가 없음")
-        return None, None, None
+        return None, None, None, None
     # 1개일 경우
     elif stock_list_len == 1:
         stock_code = stock_list_pd.iat[0, 0]
@@ -402,11 +421,6 @@ def main():
         api 세팅 완료하면 이거 주석 해제하고 사용할것
         사용전에 save_log_yesalchemy.KRXRealData 클래스의 create_table 꼭 실행할것
         """
-        # market_data.login()
-        # process_kospi = multiprocessing.Process(target=market_data.kospi_tickdata)
-        # process_kosdaq = multiprocessing.Process(target=market_data.kosdaq_tickdata)
-        # process_kospi.start()
-        # process_kosdaq.start()
 
         """
         뉴스데이터는 아직 어떻게 처리할지 안정해서 일단 냅둠. 이건 실행시키지 말것
