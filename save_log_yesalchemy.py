@@ -116,7 +116,69 @@ class LogTable(Table):
         result = self.connection.execute(sql, **input_variable)
     
         return result
+
+    #가즈아 로그를 db에 넣는다.
+    def insert_gazua_log(self, guild_id, channel_id, author_id, stock_code, stock_value_want):
+        input_variable={"guild_id" : guild_id, "channel_id" : channel_id,
+                        "author_id" : author_id, "stock_code" : stock_code,
+                        "stock_value_want" : stock_value_want
+                        }
+        
+        #에러 처리
+        for i in [guild_id, channel_id, author_id]:
+            if type(i) != int:
+                raise TypeError("guild_id, channel_id, author_id should be 'int' type")
+            
+        #실행
+        sql = sql_text("""
+                       INSERT INTO input_log (
+                           time, type, guild_id, channel_id, author_id, stock_code, stock_value_sub
+                       )
+                       VALUES (default, '가즈아', :guild_id, :channel_id, :author_id, :stock_code, :stock_value_want)
+                       """)
+
+        result = self.connection.execute(sql, **input_variable)
     
+        return result
+# 걍 가즈아 갯수 세는 용도
+class GazuaCountTable(Table):
+    #테이블을 만든다
+    def create_table(self):
+        sql = sql_text("""
+                       CREATE TABLE gazua_count (
+                           `stock_code` varchar(15) PRIMARY KEY,
+                           `count` int unsigned
+                           );
+                       """)
+        
+        print(self.connection)
+        try:
+            self.connection.execute(sql)
+        except:
+            error_message = "Already exist"
+            print(error_message)
+    
+    def insert_update(self, stock_code):
+        sql = sql_text("""
+                       INSERT INTO gazua_count (stock_code, count)
+                       VALUES (:stock_code, 1)
+                       ON DUPLICATE KEY UPDATE count=count+1
+                       """)
+                       
+        result = self.connection.execute(sql, stock_code=stock_code)
+    
+        return result
+    
+    def read(self, stock_code):
+        
+        sql = sql_text("""
+                       SELECT count
+                       FROM `gazua_count`
+                       WHERE stock_code = :stock_code;
+                       """)
+        result = self.connection.execute(sql, stock_code=stock_code).fetchone()
+        return result
+        
 
 class StockInfoTable(Table):
     """
@@ -198,14 +260,13 @@ class StockInfoTable(Table):
 
         # api 사용하여 종목정보 read
         df = self._stock_name()
-        print(df)
-        df.to_sql(name='stock_code', con=self.connection, if_exists='replace',index=False, method='multi')
+        df.to_sql(name='stock_code', con=self.connection, if_exists='replace', index=False, method='multi')
         print("저장완료")
 
     
     # 최초 테이블 생성
     # 처음 테이블 만들 때 이것으로 만드는거 추천
-    def init_create_table(self):
+    def create_table(self):
         sql = sql_text("""
                        CREATE TABLE stock_code (
                            `code` varchar(15) PRIMARY KEY,
@@ -484,19 +545,6 @@ class KRXRealData(Table):
 
 
         self.connection.execute(sql, **context)
-        # self.connection.execute(sql,
-        #                         shcode = context["shcode"],
-        #                         chetime = context["chetime"],
-        #                         sign = context["sign"],
-        #                         change = context["change"],
-        #                         drate = context["drate"],
-        #                         price = context["price"],
-        #                         open = context["open"],
-        #                         high = context["high"],
-        #                         low = context["low"],
-        #                         volume = context["volume"],
-        #                         value = context["value"],
-        #                         )
 
     def read(self, shcode):
         """
@@ -519,14 +567,9 @@ class KRXRealData(Table):
 
 #main 함수
 def main():
-    #체크용
-    # sql = select([sql_text(""" last_get_time, get_count
-    #                FROM support_fund
-    #                """)]).where(sql_text('author_id = :author_id'))
-    # print(sql)
-    StockInfoTable().init_create_table()
+    import market_data
+    market_data.login()
     StockInfoTable().update_table()
-
 
 if __name__ == "__main__":
     main()

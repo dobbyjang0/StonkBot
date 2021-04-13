@@ -101,13 +101,13 @@ class mock_have(formbase):
 
 #가즈아 관련     
 class gazua(formbase):
-    def insert(self, stock_name, stock_price=None, *arg, **kwarg):
+    def insert(self, stock_name, gazua_count, stock_price=None, *arg, **kwarg):
         if stock_price is None:
             embed_message_price = ""
         else:
             embed_message_price = f"{stock_price}까지"
         self.embed.title = f"{stock_name}, {embed_message_price}가즈아!!"
-        self.embed.set_author(name="총 n명의 사용자가 가즈아를 외쳤습니다")
+        self.embed.set_author(name=f"총 {gazua_count}명의 사용자가 가즈아를 외쳤습니다")
         
         GAZUA_IMG_URL = 'https://media.discordapp.net/attachments/804815694717911080/827234484112982086/gazua.png?width=676&height=676'
         self.embed.set_thumbnail(GAZUA_IMG_URL)

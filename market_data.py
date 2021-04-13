@@ -118,52 +118,6 @@ def kosdaq_tickdata():
     kosdaq_data.set_outblock(["shcode", "chetime", "sign", "change", "drate", "price", "open", "high", "low", "volume", "value"])
     kosdaq_data.start()
 
-# 모든종목 정보
-# 데이터프레임으로
-# market 열이 0이면 코스피 1이면 코스닥
-# ETF 열이 0이면 일반종목, 1이면 ETF
-# 모듈간 순환참조를 피하기 위해 save_log_yesalchemy.py 로 이동함
-# def stock_name():
-#     """
-#     kospi, kosdaq에 존재하는 모든 종목에 대한 정보를 pandas 데이터프레임 객체로 반환
-#
-#     Returns:
-#         pandas dataframe object
-#
-#                code            name    market ETF
-#         0     000020          동화약품      1   0
-#         1     000040         KR모터스      1   0
-#         2     000050            경방      1   0
-#         3     000060         메리츠화재      1   0
-#         ...      ...           ...    ...  ..
-#
-#         Columns:
-#             code: 종목코드
-#             name: 종목명
-#             market: 시장구분
-#             ETF: ETF 구분
-#     """
-#     query = XAQuery()
-#     in_field = {"gubun": '0'}
-#     query.set_inblock('t8430', in_field)
-#     query.request()
-#     out_count = query.get_count('t8430OutBlock')
-#
-#     shcode = [query.get_outblock('t8430OutBlock', "shcode", i)["shcode"] for i in range(out_count)]
-#     hname = [query.get_outblock('t8430OutBlock', "hname", i)["hname"] for i in range(out_count)]
-#     gubun = ["KOSPI" if query.get_outblock('t8430OutBlock', "gubun", i)["gubun"] == '1' else "KOSDAQ" for i in range(out_count)]
-#     etfgubun = ["주식" if query.get_outblock('t8430OutBlock', "etfgubun", i)["etfgubun"] == '0' else "ETF" for i in range(out_count)]
-#
-#     data = {
-#         "code": shcode,
-#         "name": hname,
-#         "market": gubun,
-#         "ETF": etfgubun
-#     }
-#
-#     df = pd.DataFrame(data, columns = ["code", "name", "market", "ETF"])
-#     return df
-
 def news():
     """
     실시간 뉴스데이터 수신
