@@ -5,8 +5,10 @@ from xing_api import EventHandler
 import json
 from save_log_yesalchemy import StockInfoTable
 from save_log_yesalchemy import KRXRealData
+from save_log_yesalchemy import KRXNewsData
 import pandas as pd
 import multiprocessing
+import datetime
 
 # 로그인
 def login():
@@ -60,17 +62,16 @@ class NewsEvent(EventHandler):
     def OnReceiveRealData(self, tr_code):
         outblock_field = self.user_obj.outblock_field
         result = {}
+        date_time = self.com_obj.GetFieldData("OutBlock", 'date')
+        date_time = date_time + self.com_obj.GetFieldData("OutBlock", 'time')
+        date_time = datetime.datetime.strptime(date_time, '%Y%m%d%H%M%S')
+        result["datetime"] = str(date_time)
         if isinstance(outblock_field, str):
             outblock_field = [outblock_field]
         for i in outblock_field:
             result[i] = self.com_obj.GetFieldData("OutBlock", i)
-        code = self.com_obj.GetFieldData("OutBlock", "code")
-        if code != '':
-            max_num = len(code) // 12
-            result["code"] = [code[12 * num + 6 : 12 * (num + 1)] for num in range(max_num)]
-        else:
-            result["code"] = ''
-        print(result)
+        # print(result)
+        KRXNewsData().insert(result)
 
 def _shcode(market_type):
     """
@@ -125,7 +126,7 @@ def news():
     login()
     news = XAReal(NewsEvent)
     news.set_inblock("NWS", "NWS001", field = "nwcode")
-    news.set_outblock(["date", "time", "id", "title"])
+    news.set_outblock(["id", "title", "code"])
     news.start()
 
 # 테스트용
@@ -135,12 +136,12 @@ def main():
     """
     if __name__ == "__main__":
         login()
-        StockInfoTable().update_table()
-        process_kospi = multiprocessing.Process(target = kospi_tickdata)
-        process_kosdaq = multiprocessing.Process(target = kosdaq_tickdata)
-        # process_news = multiprocessing.Process(target = news)
-        process_kospi.start()
-        process_kosdaq.start()
-        # process_news.start()
+        # StockInfoTable().update_table()
+        # process_kospi = multiprocessing.Process(target = kospi_tickdata)
+        # process_kosdaq = multiprocessing.Process(target = kosdaq_tickdata)
+        process_news = multiprocessing.Process(target = news)
+        # process_kospi.start()
+        # process_kosdaq.start()
+        process_news.start()
 
 main()

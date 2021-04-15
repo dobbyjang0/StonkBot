@@ -564,12 +564,44 @@ class KRXRealData(Table):
         result = self.connection.execute(sql, shcode = shcode).fetchone()
         return result
 
+class KRXNewsData(Table):
+    def create_table(self):
+        """
+        테이블 생성
+        """
+        sql = sql_text("""
+                       CREATE TABLE krx_news_data(
+                           `index` int AUTO_INCREMENT PRIMARY KEY,
+                           `datetime` datetime,
+                           `id` varchar(3),
+                           `title` text,
+                           `code` varchar(250)                           
+                           );
+                       """)
+        self.connection.execute(sql)
+
+
+
+    def insert(self, context):
+        """
+        데이터를 krx_news_data 에 삽입
+        """
+        sql = sql_text("""
+                       INSERT INTO krx_news_data 
+                       (`datetime`, `id`, `title`, `code`)
+                       VALUES(:datetime, :id, :title, :code)
+                       """)
+
+        self.connection.execute(sql, **context)
+
 
 #main 함수
 def main():
-    import market_data
-    market_data.login()
-    StockInfoTable().update_table()
+    # import market_data
+    # market_data.login()
+    # StockInfoTable().update_table()
+    a = KRXNewsData()
+    a.create_table()
 
 if __name__ == "__main__":
     main()
