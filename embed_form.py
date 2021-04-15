@@ -1,4 +1,5 @@
 import discord
+import time
 
 def embed_factory(form_name, *arg, **kwarg):
     
@@ -40,27 +41,67 @@ def number_to_emoji(number):
     emoji = ["0️⃣","1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"]
     return emoji[number]
 
-#검색 관련
-class serch_result(formbase):
-    def insert(self, name, naver_url, price, compared_price, rate, volume, transaction_price, high_price, low_price, chart_url, market = None, *arg, **kwarg):
+def compared_sign_to_emoji(number):
+    emoji = [None, '<:toptop:832329922634448896>',
+             '<:upup:832329922622128198>',
+             '<:samesame:832329922604302356>',
+             '<:downdown:832329922571141150>',
+             '<:bottbott:832329922747564062>']
+    return emoji[number]
 
-        self.embed.title = name + ' ' + set_market_to_emoji(market)
+#검색 관련
+#구식 파셔 디자인
+class serch_result(formbase):
+    def insert(self, name, naver_url, price, compared_sign, compared_price, rate, volume, transaction_price, start_price, high_price, low_price, chart_url, stock_market = None, *arg, **kwarg):
+
+        self.embed.title = name + ' ' + set_market_to_emoji(stock_market)
         self.embed.url = naver_url
-        self.embed.description = f"현재가 : **{price}**\t{compared_price}\t{rate}\n"
+        self.embed.description = f"현재가 : **{price}**\t{compared_sign_to_emoji(compared_sign)}{compared_price}\t{rate}\n"
         
+        self.embed.add_field(name="시가", value=start_price)
+        self.embed.add_field(name="고가", value=high_price)
+        self.embed.add_field(name="저가", value=low_price)
         self.embed.add_field(name="거래량(천주)", value=volume)
         self.embed.add_field(name="거래대금(백만)", value=transaction_price)
-        self.embed.add_field(name=".", value=".")
-        self.embed.add_field(name="장중최고", value=high_price)
-        self.embed.add_field(name="장중최저", value=low_price)
         self.embed.set_image(url=chart_url)
+
+#신식 이베스트 
+class serch_result2(formbase):
+    def insert(self, name, code, compared_sign, compared_price, rate, price, start_price,  high_price, low_price, volume, transaction_price, stock_market = None, *arg, **kwarg):
         
+        IMG_URL_BASE = "https://ssl.pstatic.net/imgfinance/chart/item/area/day/%s.png?sidcode=%d"
+        MAIN_URL_BASE = "https://finance.naver.com/item/main.nhn?code="
+        
+        def rate_plus_sign(rate):
+            if rate>0:
+                return '+'
+            else:
+                return ''
+        
+        self.embed.title = name + ' ' + set_market_to_emoji(stock_market)
+        self.embed.url = MAIN_URL_BASE + code
+        self.embed.description = f"현재가 : **{price}**\t{compared_sign_to_emoji(compared_sign)}{compared_price}\t{rate_plus_sign(rate)}{rate}%\n"
+        self.embed.add_field(name="시가", value=start_price)
+        self.embed.add_field(name="고가", value=high_price)
+        self.embed.add_field(name="저가", value=low_price)
+        self.embed.add_field(name="거래량(천주)", value=volume)
+        self.embed.add_field(name="거래대금(백만)", value=transaction_price)
+        self.embed.set_image(url=IMG_URL_BASE % (code, int(time.time()*1000//1)))
+        
+
 class serch_list(formbase):
     def init_make(self):
         self.embed.title = "검색하고자 하는 주식 번호를 입력해주세요"
     def insert(self, pd, *arg, **kwarg):
         self.embed.description = "\n".join(f"{number_to_emoji(idx)} {pd.iat[idx, 1]} {set_market_to_emoji(pd.iat[idx, 2])}" for idx in range(len(pd))) 
-
+        
+class calculate(formbase):
+    def insert(self, stock_count, name, price, *arg, **kwarg):
+        price_int = int(price.replace(",",""))
+        total_stock_price = price_int * stock_count
+        self.embed.title = f'{total_stock_price}원'
+        self.embed.set_footer(text=f'{name} {stock_count}주의 가격')
+        
 #모의주식 관련
 #지원금 관련
 class mock_support_first(formbase):
@@ -110,12 +151,68 @@ class gazua(formbase):
         self.embed.set_author(name=f"총 {gazua_count}명의 사용자가 가즈아를 외쳤습니다")
         
         GAZUA_IMG_URL = 'https://media.discordapp.net/attachments/804815694717911080/827234484112982086/gazua.png?width=676&height=676'
-        self.embed.set_thumbnail(GAZUA_IMG_URL)
+        self.embed.set_thumbnail(url=GAZUA_IMG_URL)
         
 class testembed(formbase):
     def init_make(self):
         self.embed.title = "빈칸테스트 : %10s" % "내용"
         self.embed.description = "빈칸테스트 : %10s" % "내용"
+
+#도움 관련
+class help_all(formbase):
+    def init_make(self):
+        IMG_URL = 'https://media.discordapp.net/attachments/813006733881376778/814116320123551744/1.png?width=672&height=676'
+        self.embed.set_author(name='StonkBot의 명령어 모음입니다.', icon_url = IMG_URL)
+        
+        description_list = ['`주식` : -주식 `<주식 이름 또는 코드>` `<차트 형태>`',
+                            '`계산` : -계산 `<주식 이름 또는 코드>` `<주식 갯수>`',
+                            '`모의` : `지원금` `매수` `매도` `보유` `도움`',
+                            '`가즈아` : -가즈아 `<주식 이름 또는 코드>` `<예상하는 가격>`',
+                            '`코스피` `코스닥`',
+                            '-도움 `<명령어>`로 더 상세한 설명을 볼 수 있습니다.'
+                             ]
+        self.embed.description = "\n".join(x for x in description_list)
+
+class help_serch(formbase):
+    def init_make(self):
+        IMG_URL = 'https://media.discordapp.net/attachments/813006733881376778/814116320123551744/1.png?width=672&height=676'
+        self.embed.set_author(name='주식(또는 검색) 관련 설명', icon_url = IMG_URL)
+        self.embed.title = '-주식 `<주식 이름 또는 코드>` (`<차트 형태>`)'
+        self.embed.description = '`<차트 형태>` : 일, 주, 월, 년, 3년, 5년, 10년, 일봉, 주봉, 월봉'
+        
+class help_mock(formbase):
+    def init_make(self):
+        IMG_URL = 'https://media.discordapp.net/attachments/813006733881376778/814116320123551744/1.png?width=672&height=676'
+        self.embed.set_author(name='모의 관련 설명', icon_url = IMG_URL)
+        self.embed.title = '`지원금` `매수` `매도` `보유` `도움`'
+        description_list = ['`지원금` : 매일마다 지원금을 받습니다',
+                            '`보유` : 보유하고 있는 주식 목록 및 원화를 보여줍니다',
+                            '`매수` : -매수 `<주식 이름 또는 코드>` `<주식 갯수 또는 가격>`',
+                            '`매도` : -매도 `<주식 이름 또는 코드>` `<주식 갯수 또는 가격>`',
+                            '`도움` : 도움말을 보여줍니다',
+                            '`<주식 갯수 또는 가격>` : 끝에 `주` 또는 아무것도 붙이지 않는다면 해당 갯수만큼의 주식을 사고 팝니다.',
+                            '끝에 `원`이라고 입력시 해당 돈에서 최대한 살 수 있는 만큼의 주식을 삽니다'
+                             ]
+        self.embed.description = "\n".join(x for x in description_list)
+
+class help_kos(formbase):
+    def init_make(self):
+        IMG_URL = 'https://media.discordapp.net/attachments/813006733881376778/814116320123551744/1.png?width=672&height=676'
+        self.embed.set_author(name='코스피 코스닥 관련 설명', icon_url = IMG_URL)
+        self.embed.title = '-코스피 또는 크스닥 (`<차트 형태>`)'
+        self.embed.description = '`<차트 형태>` : 일, 월, 년, 3년'
+
+class help_gazua(formbase):
+    def init_make(self):
+        IMG_URL = 'https://media.discordapp.net/attachments/813006733881376778/814116320123551744/1.png?width=672&height=676'
+        self.embed.set_author(name='가즈아 관련 설명', icon_url = IMG_URL)
+        self.embed.title = '-가즈아 `<주식 이름 또는 코드>` (`<주식 가격 또는 층수>`)'
+
+class help_calculate(formbase):
+    def init_make(self):
+        IMG_URL = 'https://media.discordapp.net/attachments/813006733881376778/814116320123551744/1.png?width=672&height=676'
+        self.embed.set_author(name='계산 관련 설명', icon_url = IMG_URL)
+        self.embed.title = '-계산 `<주식 이름 또는 코드>` (`<주식 갯수>`)'
 
 if __name__ == "__main__":
     print(embed_factory("gazua",3).embed.title)

@@ -1,5 +1,3 @@
-import nest_asyncio
-import asyncio
 import discord
 from discord.ext import commands, tasks
 import pandas
@@ -10,6 +8,11 @@ from embed_form import embed_factory as ef
 import market_data
 import multiprocessing
 
+import nest_asyncio
+import asyncio
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import triggers
+
 nest_asyncio.apply()
 
 bot = commands.Bot(command_prefix="-")
@@ -17,6 +20,8 @@ bot = commands.Bot(command_prefix="-")
 
 @bot.event
 async def on_ready():
+    
+    
     print("--- 연결 성공 ---")
     print(f"봇 이름: {bot.user.name}")
     print(f"ID: {bot.user.id}")
@@ -35,6 +40,12 @@ async def on_ready():
     
     print('실시간 데이터 시작')
     
+    sched = AsyncIOScheduler(timezone="Asia/Seoul")
+    sched.add_job(triggers.db_update(bot).process, 'cron', hour=4)
+    sched.start()
+    
+    print('스케쥴러 시작')
+    
     
 @bot.command()
 async def 킬(ctx):
@@ -51,10 +62,21 @@ async def 테스트(ctx):
         return
     await ctx.send(embed=ef("testembed").get)
 
+@bot.command(aliases=['도움'])
+async def help_all(ctx, help_input=None):
+    help_type_dic = {None:'help_all', '주식':'help_serch', '검색':'help_serch',
+                     '모의':'help_mock', '코스피':'help_kos', '코스닥':'help_kos',
+                     '가즈아':'help_gazua', '계산':'help_calculate'}
+    
+    help_type = help_type_dic.get(help_input)
+    if not help_type:
+        help_type = 'help_all'
+    
+    await ctx.send(embed=ef(help_type).get)
 
 #코스피, 코스닥
 #로그 저장 추가하기
-@bot.command(aliases=["kospi"])
+@bot.command(aliases=["kospi", 'KOSPI'])
 async def 코스피(ctx, chart_type=None):
     serching_index = stock.KOSInfo()
     serching_index.get("KOSPI")
@@ -64,7 +86,7 @@ async def 코스피(ctx, chart_type=None):
     
     await ctx.send(embed=ef("serch_result",**serching_index.to_dict()).get)
     
-@bot.command(aliases=["kosdaq"])
+@bot.command(aliases=["kosdaq", 'KOSDAQ'])
 async def 코스닥(ctx, chart_type=None):
     serching_index = stock.KOSInfo()
     serching_index.get("KOSDAQ")
@@ -78,7 +100,7 @@ async def 코스닥(ctx, chart_type=None):
 @bot.command(aliases=["검색"])
 async def 주식(ctx,stock_name="도움",chart_type="일"):
     if stock_name == "도움":
-        await ctx.send("도움말 출력")
+        await ctx.send(embed=ef('help_serch').get)
         return
     
     serching_stock = await get_stock_info(ctx, stock_name)
@@ -89,6 +111,8 @@ async def 주식(ctx,stock_name="도움",chart_type="일"):
     #그래프의 url을 바꿈
     if chart_type != "일":
         serching_stock.change_graph_interval(chart_type)
+    
+    print(serching_stock.to_dict())
     
     # 로그에 저장
     input_variable={"guild_id" : ctx.guild.id, "channel_id" : ctx.channel.id,
@@ -102,13 +126,43 @@ async def 주식(ctx,stock_name="도움",chart_type="일"):
         
     # embed 출력
     await ctx.send(embed=ef("serch_result",**serching_stock.to_dict()).get)
-    return
+
 
 @bot.command()
 async def 주식2(ctx, stock_name="도움"):
+    if stock_name == "도움":
+        await ctx.send(embed=ef('help_serch').get)
+        return
+    
     stock_code, stock_real_name, stock_market, is_ETF = await serch_stock_by_bot(ctx, stock_name)
     result = bot_table.KRXRealData().read(stock_code)
-    await ctx.send(result)
+    # 종목코드, 체결시간, 전일대비구분, 전일대비, 등락율, 현재가, 시가, 고가, 저가, 누적거래량, 누적거래대금
+    input_variable = {'name' : stock_real_name, 'stock_market' : stock_market,
+                      'code' : result[0], 'compared_sign' : result[2],
+                      'compared_price' : result[3], 'rate' : result[4],
+                      'price' : result[5], 'start_price' : result[6],
+                      'high_price' : result[7], 'low_price' : result[8],
+                      'volume' : result[9], 'transaction_price' : result[10]}
+    #이름, 시장구분, 코드, 전일대비구분, 전일대비, 등락율, 현재가, 시가, 조가, 저가, 누적거래량, 누적거래대금
+    print(result)
+    await ctx.send(embed=ef("serch_result2",**input_variable).get)
+
+@bot.command()
+async def 계산(ctx, stock_name="도움", stock_count=1):
+    if stock_name == "도움":
+        await ctx.send(embed=ef('help_calculate').get)
+        return
+    
+    if type(stock_count) != int:
+        await ctx.send('주식 갯수는 숫자를 입력해 주세요')
+        return
+    
+    serching_stock = await get_stock_info(ctx, stock_name)
+    
+    if serching_stock is None:
+        return
+    
+    await ctx.send(embed=ef("calculate", stock_count=stock_count, **serching_stock.to_dict()).get)
 
 #가즈아 기능
 #나중에 가격도 검색해서 로그에 넣게 바꾸기?
@@ -133,7 +187,7 @@ async def 가즈아(ctx, stock_name="삼성전자", stock_price=None):
     
     bot_table.LogTable().insert_gazua_log(**input_variable)
     
-    gazua_count = bot_table.GazuaCountTable().read(stock_code)
+    gazua_count = bot_table.GazuaCountTable().read(stock_code)[0]
     bot_table.GazuaCountTable().insert_update(stock_code)
     
     #주식코드를 기본키로 해서 추가?
@@ -147,7 +201,7 @@ async def mock(ctx):
 
 @mock.command(name="도움")
 async def mock_help(ctx):
-    await ctx.send("도움 메세지 출력")
+    await ctx.send(embed=ef('help_mock').get)
     return
 
 @mock.command(name="지원금")
@@ -316,7 +370,7 @@ async def mock_have(ctx, stock_name=None, stock_count=1):
         await ctx.send(embed=ef("mock_have", ctx.author, fund_list).get)
         return
     except:
-        await ctx.send("보유 자산이 없습니다")
+        await ctx.send("보유 자산이 없습니다. 지원금을 받아주세요.")
         return
 
 # 애매한 주식명이 입력되었을 시
@@ -352,7 +406,7 @@ async def serch_stock_by_bot(ctx, stock_name):
         
         try:
             # 숫자 입력을 받는다
-            check_number_msg = await bot.wait_for('message', timeout=10, check=check)
+            check_number_msg = await bot.wait_for('message', timeout=60, check=check)
         except:
             # 시간 초과시
             await ctx.send("시간초과")            
@@ -391,21 +445,29 @@ async def get_stock_info(ctx, stock_name):
     #코드가 아닐시 검색해본다
     if is_stock_code(stock_name):
         stock_code = stock_name
+        stock_code, stock_real_name, stock_market, is_ETF = bot_table.StockInfoTable().read_stock_by_code(stock_code)
     else:
         stock_code, stock_real_name, stock_market, is_ETF = await serch_stock_by_bot(ctx, stock_name)
-        if stock_code == None:
-            return None
+        
+    if stock_code == None:
+        return None
     
     #코드로 주식 검색
     serching_stock=stock.StockInfo()
     
+    print(stock_code)
+    
+    serching_stock.get(stock_code)
+    serching_stock.stock_market = stock_market
+    
     try:
         serching_stock.get(stock_code)
-        serching_stock.market = stock_market
+        serching_stock.stock_market = stock_market
         #stock과의 연관성이 너무 많다. 증권사 api 쓸줄 알게되면 갈아치울것
     except:
         await ctx.send("잘못된 코드명")
         return None
+    
     
     return serching_stock
             
@@ -415,12 +477,6 @@ def main():
         with open("bot_token.txt", mode='r', encoding='utf-8') as txt:
             bot_token = txt.read()
         bot.run(bot_token)
-
-        """
-        실시간 시세, 뉴스 데이터 받는 부분
-        api 세팅 완료하면 이거 주석 해제하고 사용할것
-        사용전에 save_log_yesalchemy.KRXRealData 클래스의 create_table 꼭 실행할것
-        """
 
         """
         뉴스데이터는 아직 어떻게 처리할지 안정해서 일단 냅둠. 이건 실행시키지 말것
