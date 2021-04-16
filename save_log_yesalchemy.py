@@ -565,19 +565,8 @@ class KRXRealData(Table):
                        ON DUPLICATE KEY UPDATE `chetime` = :chetime, `sign` = :sign, `change` = :change, `drate` = :drate, `price` = :price, `open` = :open, `high` = :high, `low` = :low, `volume` = :volume, `value` = :value;
                        """)
 
-        self.connection.execute(sql,
-                                shcode = context["shcode"],
-                                chetime = context["chetime"],
-                                sign = context["sign"],
-                                change = context["change"],
-                                drate = context["drate"],
-                                price = context["price"],
-                                open = context["open"],
-                                high = context["high"],
-                                low = context["low"],
-                                volume = context["volume"],
-                                value = context["value"],
-                                )
+
+        self.connection.execute(sql, **context)
 
     def read(self, shcode):
         """
@@ -600,12 +589,98 @@ class KRXRealData(Table):
 class MockTransection(Transection):
     pass
 
+
+class KRXNewsData(Table):
+    """
+    뉴스정보를 저장할 테이블
+    """
+    def create_table(self):
+        """
+        테이블 생성
+        """
+        sql = sql_text("""
+                       CREATE TABLE krx_news_data(
+                           `index` int AUTO_INCREMENT PRIMARY KEY,
+                           `datetime` datetime,
+                           `id` varchar(3),
+                           `title` text,
+                           `code` varchar(250)                           
+                           );
+                       """)
+        self.connection.execute(sql)
+
+
+
+    def insert(self, context):
+        """
+        데이터를 krx_news_data 에 삽입
+        """
+        sql = sql_text("""
+                       INSERT INTO krx_news_data 
+                       (`datetime`, `id`, `title`, `code`)
+                       VALUES(:datetime, :id, :title, :code)
+                       """)
+
+        self.connection.execute(sql, **context)
+
+class KRXIndexData(Table):
+    """
+    지수 실시간 데이터를 저장할 테이블
+    """
+    def create_table(self):
+        """
+        테이블 생성
+        """
+        sql = sql_text("""
+                       CREATE TABLE krx_index_data(
+                           `upcode` varchar(5) PRIMARY KEY,
+                           `time` varchar(8) ,
+                           `sign` tinyint,
+                           `change` decimal(10,2),
+                           `drate` decimal(5,2),
+                           `jisu` decimal(5,2),
+                           `openjisu` decimal(10,2),
+                           `highjisu` decimal(10,2),
+                           `lowjisu` decimal(10,2),
+                           `upjo` int,
+                           `downjo` int,
+                           `upjrate` decimal(5,2),
+                           `frgsvalue` bigint,
+                           `orgsvalue` bigint                                                      
+                           );
+                       """)
+        self.connection.execute(sql)
+
+    def update(self, context):
+        sql = sql_text("""
+                       INSERT INTO krx_real_data VALUES(:upcode, :time, :sign, :change, :drate, :jisu, :openjisu, :highjisu, :lowjisu, :upjo, :downjo, :upjrate, :frgsvalue, :orgsvalue)
+                       ON DUPLICATE KEY UPDATE 
+                           `upcode` = :upcode,
+                           `time` = :time,
+                           `sign` = :sign,
+                           `change` = :change,
+                           `drate` = drate,
+                           `jisu` = :jisu,
+                           `openjisu` = :openjisu,
+                           `highjisu` = :highjisu,
+                           `lowjisu` = :lowjisu,
+                           `upjo` = :upjo,
+                           `downjo` = :downjo,
+                           `upjrate` = :upjrate,
+                           `frgsvalue` = :frgsvalue,
+                           `orgsvalue` = :orgsvalue  
+                       """)
+
+        self.connection.execute(sql, **context)
+
+
 #main 함수
 def main():
-    import market_data
-    market_data.login()
-    StockInfoTable().update_table()
-    
+    # import market_data
+    # market_data.login()
+    # StockInfoTable().update_table()
+    a = KRXNewsData()
+    a.create_table()
 
 if __name__ == "__main__":
     main()
