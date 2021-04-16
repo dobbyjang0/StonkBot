@@ -2,11 +2,14 @@ from xing_api import XASession
 from xing_api import XAQuery
 from xing_api import XAReal
 from xing_api import EventHandler
-import pandas as pd
 import json
 from save_log_yesalchemy import StockInfoTable
 from save_log_yesalchemy import KRXRealData
+from save_log_yesalchemy import KRXNewsData
+from save_log_yesalchemy import KRXIndexData
+import pandas as pd
 import multiprocessing
+import datetime
 
 # 로그인
 def login():
@@ -43,22 +46,35 @@ class NewsEvent(EventHandler):
     """
     xing_api.XAReal 객체에 의해 ReceiveRealData 이벤트 수신 시 작동
     실시간 뉴스 수신 전용 이벤트 핸들러
-    얻은 데이터를 어디에 저장하지??
+    krx_news_data 테이블에 저장
     """
     def OnReceiveRealData(self, tr_code):
         outblock_field = self.user_obj.outblock_field
         result = {}
+        date_time = self.com_obj.GetFieldData("OutBlock", 'date')
+        date_time = date_time + self.com_obj.GetFieldData("OutBlock", 'time')
+        date_time = datetime.datetime.strptime(date_time, '%Y%m%d%H%M%S')
+        result["datetime"] = str(date_time)
         if isinstance(outblock_field, str):
             outblock_field = [outblock_field]
         for i in outblock_field:
             result[i] = self.com_obj.GetFieldData("OutBlock", i)
-        code = self.com_obj.GetFieldData("OutBlock", "code")
-        if code != '':
-            max_num = len(code) // 12
-            result["code"] = [code[12 * num + 6 : 12 * (num + 1)] for num in range(max_num)]
-        else:
-            result["code"] = ''
-        print(result)
+        KRXNewsData().insert(result)
+
+class IndexEvent(EventHandler):
+    """
+    xing_api.XAReal 객체에 의해 ReceiveRealData 이벤트 수신 시 작동
+    업종별 지수 전용 이벤트 핸들러
+    krx_index_data 테이블에 저장
+    """
+    def OnReceiveRealData(self, tr_code):
+        result = {}
+        outblock_field = self.user_obj.outblock_field
+        if isinstance(outblock_field, str):
+            outblock_field = [outblock_field]
+        for i in outblock_field:
+            result[i] = self.com_obj.GetFieldData("OutBlock", i)
+        KRXIndexData().update(result)
 
 
 
@@ -92,7 +108,7 @@ def _index_code():
         301: 코스닥
     """
     query = XAQuery()
-    in_field = {"gubun": ''}
+    in_field = {"gubun1": ''}
     query.set_inblock('t8424', in_field)
     query.request()
     out_count = query.get_count('t8424OutBlock')
@@ -129,14 +145,19 @@ def kosdaq_tickdata():
 def index_tickdata():
     """
     업종별 지수
-    업종코드, 시간, 전일대비구분, 등락율, 현재지수, 시가지수, 고가지수, 저가지수, 상한종목수, 하한종목수, 상승종목비율, 외인순매수금액, 기관순매수금액
+    (일단 코스피, 코스닥 지수만)
+    업종코드, 시간, 전일대비구분, 전일대비, 등락율, 현재지수, 시가지수, 고가지수, 저가지수, 상한종목수, 하한종목수, 상승종목비율, 외인순매수금액, 기관순매수금액
 
     실시간 감시, db에 업데이트
+    {'upcode': '001', 'time': '153210', 'sign': '2', 'change': '4.29', 'drate': '0.13', 'jisu': '3198.62', 'openjisu': '3194.08', 'highjisu': '3206.76', 'lowjisu': '3185.67', 'upjo': '5', 'downjo': '0', 'upjrate': '57.48', 'frgsvalue': '-213424', 'orgsvalue': '-479101'}
     """
     login()
-    index = _index_code()
-    index_data = XAReal
-
+    # index = _index_code()
+    index_data = XAReal(IndexEvent)
+    # index_data.set_inblock("IJ_", index, field = "upcode")
+    index_data.set_inblock("IJ_", ['001', '301'], field="upcode")
+    index_data.set_outblock(["upcode", "time", "sign", "change", "drate", "jisu", "openjisu", "highjisu", "lowjisu", "upjo", "downjo", "upjrate", "frgsvalue", "orgsvalue"])
+    index_data.start()
 
 def news():
     """
@@ -145,7 +166,7 @@ def news():
     login()
     news = XAReal(NewsEvent)
     news.set_inblock("NWS", "NWS001", field = "nwcode")
-    news.set_outblock(["date", "time", "id", "title"])
+    news.set_outblock(["id", "title", "code"])
     news.start()
 
 # 테스트용
@@ -156,12 +177,13 @@ def main():
     if __name__ == "__main__":
         login()
         # StockInfoTable().update_table()
-
-        process_kospi = multiprocessing.Process(target = kospi_tickdata)
-        process_kosdaq = multiprocessing.Process(target = kosdaq_tickdata)
+        # process_kospi = multiprocessing.Process(target = kospi_tickdata)
+        # process_kosdaq = multiprocessing.Process(target = kosdaq_tickdata)
         # process_news = multiprocessing.Process(target = news)
-        process_kospi.start()
-        process_kosdaq.start()
+        process_index = multiprocessing.Process(target=index_tickdata)
+        # process_kospi.start()
+        # process_kosdaq.start()
         # process_news.start()
+        process_index.start()
 
 main()
