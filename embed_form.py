@@ -67,10 +67,23 @@ class serch_result(formbase):
 
 #신식 이베스트 
 class serch_result2(formbase):
-    def insert(self, name, code, compared_sign, compared_price, rate, price, start_price,  high_price, low_price, volume, transaction_price, stock_market = None, *arg, **kwarg):
+    def insert(self, name, code, compared_sign, compared_price, rate, price, start_price, high_price, low_price, volume, transaction_price, chart_type, stock_market = None, *arg, **kwarg):
         
-        IMG_URL_BASE = "https://ssl.pstatic.net/imgfinance/chart/item/area/day/%s.png?sidcode=%d"
+        IMG_URL_BASE = "https://ssl.pstatic.net/imgfinance/chart/item/%s/%s.png?sidcode=%d"
         MAIN_URL_BASE = "https://finance.naver.com/item/main.nhn?code="
+        
+        def chart_type_change(chart_type):
+            chart_type_dic = {"일":"area/day", "주":"area/week", "월":"area/month3", "년":"area/year",
+                              "3년":"area/year3", "5년":"area/year5", "10년":"area/year10",
+                              "일봉":"candle/day", "주봉":"candle/week", "월봉":"candle/month"
+                              }
+            
+            result = chart_type_dic.get(chart_type)
+            
+            if not result:
+                result = "area/day"
+            
+            return result
         
         def rate_plus_sign(rate):
             if rate>0:
@@ -86,7 +99,7 @@ class serch_result2(formbase):
         self.embed.add_field(name="저가", value=low_price)
         self.embed.add_field(name="거래량(천주)", value=volume)
         self.embed.add_field(name="거래대금(백만)", value=transaction_price)
-        self.embed.set_image(url=IMG_URL_BASE % (code, int(time.time()*1000//1)))
+        self.embed.set_image(url=IMG_URL_BASE % (chart_type_change(chart_type), code, int(time.time()*1000//1)))
         
 
 class serch_list(formbase):
@@ -97,10 +110,9 @@ class serch_list(formbase):
         
 class calculate(formbase):
     def insert(self, stock_count, name, price, *arg, **kwarg):
-        price_int = int(price.replace(",",""))
-        total_stock_price = price_int * stock_count
+        total_stock_price = price * stock_count
         self.embed.title = f'{total_stock_price}원'
-        self.embed.set_footer(text=f'{name} {stock_count}주의 가격')
+        self.embed.set_footer(text=f'{name} {price} * {stock_count}주의 가격')
         
 #모의주식 관련
 #지원금 관련

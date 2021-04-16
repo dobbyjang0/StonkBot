@@ -8,6 +8,8 @@ from sqlalchemy import create_engine
 from sqlalchemy import text as sql_text
 from sqlalchemy import and_
 from sqlalchemy.sql import select
+from sqlalchemy.orm import sessionmaker
+
 import pymysql
 import pandas
 
@@ -585,9 +587,81 @@ class KRXRealData(Table):
                        """)
         result = self.connection.execute(sql, shcode = shcode).fetchone()
         return result
-
+    
+    # 가격만 스캔한다
+    def read_price(self, shcode):
+        sql = sql_text("""
+                       SELECT `price`
+                       FROM `krx_real_data`
+                       WHERE shcode = :shcode;
+                       """)
+        result = self.connection.execute(sql, shcode = shcode).fetchone()
+        return result
+    
 class MockTransection(Transection):
-    pass
+    def buy(self, author_id, stock_code, balance, stock_value):
+        sql_inset = sql_text("""
+                       INSERT INTO `account`
+                       VALUES(:author_id, :stock_code, :balance, :stock_value)
+                       ON DUPLICATE KEY UPDATE balance = balance + (:balance), sum_value= sum_value + (:stock_value);
+                       """)
+                       
+        sql_update = sql_text("""
+                       UPDATE `account`
+                       SET balance = balance - (:stock_value)
+                       WHERE author_id = :author_id and stock_code = 'KRW';
+                       """)
+         
+        Session = sessionmaker(autocommit=False, autoflush=False, bind=self.connection)
+        session = Session()
+
+        try:
+            session.execute(sql_inset, {'author_id':author_id, 'stock_code':stock_code, 'balance':balance, 'stock_value':stock_value})
+            session.execute(sql_update, {'author_id':author_id, 'stock_code':stock_code, 'balance':balance, 'stock_value':stock_value})
+            session.commit()
+            result = True
+        except:
+            session.rollback()
+            result = False
+        finally:
+            session.close()
+        
+        return result
+    
+    def sell(self, author_id, stock_code, balance, stock_value):
+        sql_update_1 = sql_text("""
+                       UPDATE `account`
+                       SET balance = balance - (:balance), sum_value= sum_value - (:stock_value)
+                       WHERE author_id = :author_id and stock_code = :stock_code;
+                       """)
+                       
+        sql_update_2 = sql_text("""
+                       UPDATE `account`
+                       SET balance = balance + (:stock_value)
+                       WHERE author_id = :author_id and stock_code = 'KRW';
+                       """)
+        
+        sql_delete = sql_text("""
+                       DELETE FROM `account`
+                       WHERE author_id = :author_id and stock_code = :stock_code and balance = 0;
+                       """)
+                       
+        Session = sessionmaker(autocommit=False, autoflush=False, bind=self.connection)
+        session = Session()
+
+        try:
+            session.execute(sql_update_1, {'author_id':author_id, 'stock_code':stock_code, 'balance':balance, 'stock_value':stock_value})
+            session.execute(sql_update_2, {'author_id':author_id, 'stock_code':stock_code, 'balance':balance, 'stock_value':stock_value})
+            session.execute(sql_delete, {'author_id':author_id, 'stock_code':stock_code, 'balance':balance, 'stock_value':stock_value})
+            session.commit()
+            result = True
+        except:
+            session.rollback()
+            result = False
+        finally:
+            session.close()
+        
+        return result
 
 
 class KRXNewsData(Table):
