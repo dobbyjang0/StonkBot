@@ -302,6 +302,22 @@ class StockInfoTable(Table):
 
         return df
     
+    def read_stock_by_code(self,stock_code):
+        #에러처리
+        if type(stock_code) != str:
+            raise TypeError("stock_code should be 'str' type")
+        
+        #실행
+        sql = sql_text("""
+                       SELECT code, name, market, ETF
+                       FROM `stock_code`
+                       WHERE code = :stock_code
+                       """)
+                       
+        result = self.connection.execute(sql, stock_code=stock_code).fetchone()
+        
+        return result
+    
     # 정확한 코드를 입력하면 이름을 찾는다
     def read_stock_code(self,stock_code):
         #실행
