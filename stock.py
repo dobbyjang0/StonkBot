@@ -172,28 +172,30 @@ class KOSInfo(InfoBase):
         self.price = text_safety(info_table.find("em", {"id":"now_value"}))
         
         #전일대비
-        change_value_and_rate = info_table.find("span", {"id":"change_value_and_rate"}).get_text().split()
-        sign_base = change_value_and_rate[1][-2:]
+        change_value_and_rate = info_table.find("span", {"id":"change_value_and_rate"})
+        change_list = change_value_and_rate.contents
         
-        if sign_base == "상승":
-            compared_price_sign= "▲"
-        elif sign_base == "하락":
-            compared_price_sign= "▼"
+        if len(change_list) < 3:
+            self.compared_sign = 3
+        elif text_safety(change_list[2]) == '상승':
+            self.compared_sign = 2
+        elif text_safety(change_list[2]) == '하락':
+            self.compared_sign = 4
         else:
-            compared_price_sign= "-"
+            self.compared_sign = 3
         
-        compared_price_value = change_value_and_rate[0]
-        
-        self.compared_price = compared_price_sign + compared_price_value
+        self.compared_price = text_safety(change_list[0])
         
         #등락률
-        self.rate = change_value_and_rate[1][:-2]
+        self.rate = str(change_list[1]).lstrip()
         
         #거래량(천주)
         self.volume = text_safety(info_table.find("td", {"id":"quant"}))
         
         #거래대금(백만)
         self.transaction_price = text_safety(info_table.find("td", {"id":"amount"}))
+        
+        self.start_price = '.'
         
         #장중고가
         self.high_price = text_safety(info_table.find("td", {"id":"high_value"}))

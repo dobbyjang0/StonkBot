@@ -199,7 +199,7 @@ class help_kos(formbase):
     def init_make(self):
         IMG_URL = 'https://media.discordapp.net/attachments/813006733881376778/814116320123551744/1.png?width=672&height=676'
         self.embed.set_author(name='코스피 코스닥 관련 설명', icon_url = IMG_URL)
-        self.embed.title = '-코스피 또는 크스닥 (`<차트 형태>`)'
+        self.embed.title = '-코스피 또는 코스닥 (`<차트 형태>`)'
         self.embed.description = '`<차트 형태>` : 일, 월, 년, 3년'
 
 class help_gazua(formbase):

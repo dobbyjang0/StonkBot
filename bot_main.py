@@ -98,9 +98,28 @@ async def 코스닥(ctx, chart_type=None):
 
 # 주식 검색 기능
 @bot.command(aliases=["검색"])
-async def 주식(ctx,stock_name="도움",chart_type="일"):
+async def 주식(ctx,stock_name="도움",chart_type=None):
     if stock_name == "도움":
         await ctx.send(embed=ef('help_serch').get)
+        return
+    #나중에 코스피, 코스닥 함수로 빼기
+    elif stock_name == "코스피":
+        serching_index = stock.KOSInfo()
+        serching_index.get("KOSPI")
+    
+        if chart_type:
+            serching_index.change_graph_interval(chart_type)
+    
+        await ctx.send(embed=ef("serch_result",**serching_index.to_dict()).get)
+        return
+    elif stock_name == '코스닥':
+        serching_index = stock.KOSInfo()
+        serching_index.get("KOSDAQ")
+    
+        if chart_type:
+            serching_index.change_graph_interval(chart_type)
+    
+        await ctx.send(embed=ef("serch_result",**serching_index.to_dict()).get)
         return
     
     serching_stock = await get_stock_info(ctx, stock_name)
@@ -109,7 +128,7 @@ async def 주식(ctx,stock_name="도움",chart_type="일"):
         return
 
     #그래프의 url을 바꿈
-    if chart_type != "일":
+    if chart_type:
         serching_stock.change_graph_interval(chart_type)
     
     print(serching_stock.to_dict())
@@ -181,13 +200,18 @@ async def 가즈아(ctx, stock_name="삼성전자", stock_price=None):
     
     #로그에 넣는다
     input_variable={"guild_id" : ctx.guild.id, "channel_id" : ctx.channel.id,
-                        "author_id" : ctx.author.id, "stock_code" : stock_code,
-                        "stock_value_want" : stock_price
-                        }
+                    "author_id" : ctx.author.id, "stock_code" : stock_code,
+                    "stock_value_want" : stock_price
+                    }
     
     bot_table.LogTable().insert_gazua_log(**input_variable)
     
-    gazua_count = bot_table.GazuaCountTable().read(stock_code)[0]
+    gazua_count = bot_table.GazuaCountTable().read(stock_code)
+    if not gazua_count:
+        gazua_count = gazua_count[0]
+    else:
+        gazua_count = 0
+    
     bot_table.GazuaCountTable().insert_update(stock_code)
     
     #주식코드를 기본키로 해서 추가?
