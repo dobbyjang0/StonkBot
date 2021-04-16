@@ -8,6 +8,13 @@ import bs4
 import requests
 import time
 
+# bs가 None 값이어도 에러가 일어나지 않게 함
+def text_safety(bs):
+    if bs is None:
+        return ''
+    else:
+        return bs.get_text(strip=True)
+
 #싱글톤 세션
 class Session():
     def __new__(cls):
@@ -80,42 +87,47 @@ class StockInfo(InfoBase):
         bs = bs4.BeautifulSoup(html, 'lxml')
         
         #주식명
-        self.name = bs.find("div", {"class": "wrap_company"}).find("h2").get_text(strip=True)
+        self.name = text_safety(bs.find("div", {"class": "wrap_company"}).find("h2"))
         
         info_table = bs.find("table", {"class": "type2 type_tax"})
         
         #현재가
-        self.price = info_table.find("strong", {"id":"_nowVal"}).get_text(strip=True)
+        self.price = text_safety(info_table.find("strong", {"id":"_nowVal"}))
         
         #전일대비
-        compared_price_soup_list = info_table.find("strong", {"id":"_diff"}).find_all("span")
-        sign_base = compared_price_soup_list[0].get_text(strip=True)
+        compared_price_soup = info_table.find("strong", {"id":"_diff"})
+        sign_base = text_safety(compared_price_soup.find("span", {"class":"blind"}))
         
         if sign_base == "상승":
-            compared_price_sign= "▲"
+            compared_price_sign= 2
         elif sign_base == "하락":
-            compared_price_sign= "▼"
+            compared_price_sign= 4
         else:
-            compared_price_sign= "-"
-
-        compared_price_value = compared_price_soup_list[1].get_text(strip=True)
+            compared_price_sign= 3
         
-        self.compared_price = compared_price_sign + compared_price_value
+        compared_price_value = text_safety(compared_price_soup.find("span", {"class":"tah"}))
+        
+        self.compared_sign = compared_price_sign
+        self.compared_price = compared_price_value
         
         #등락률
-        self.rate = info_table.find("strong", {"id":"_rate"}).get_text(strip=True)
+        self.rate = text_safety(info_table.find("strong", {"id":"_rate"}))
         
         #거래량(천주)
-        self.volume = info_table.find("span", {"id":"_quant"}).get_text(strip=True)
+        self.volume = text_safety(info_table.find("span", {"id":"_quant"}))
         
         #거래대금(백만)
-        self.transaction_price = info_table.find("span", {"id":"_amount"}).get_text(strip=True)
+        self.transaction_price = text_safety(info_table.find("span", {"id":"_amount"}))
+        
+        #시가
+        fourth = info_table.find_all("tr")[3].find_all("span", {"class":"tah p11"})[1]
+        self.start_price = text_safety(fourth)
         
         #장중고가
-        self.high_price = info_table.find("span", {"id":"_high"}).get_text(strip=True)
+        self.high_price = text_safety(info_table.find("span", {"id":"_high"}))
         
         #장중저가
-        self.low_price = info_table.find("span", {"id":"_low"}).get_text(strip=True)
+        self.low_price = text_safety(info_table.find("span", {"id":"_low"}))
         
         #차트 이미지 url
         self.chart_url = img_url
@@ -157,7 +169,7 @@ class KOSInfo(InfoBase):
         info_table = bs.find("div", {"class": "subtop_sise_detail"})
         
         #현재가
-        self.price = info_table.find("em", {"id":"now_value"}).get_text(strip=True)
+        self.price = text_safety(info_table.find("em", {"id":"now_value"}))
         
         #전일대비
         change_value_and_rate = info_table.find("span", {"id":"change_value_and_rate"}).get_text().split()
@@ -178,16 +190,16 @@ class KOSInfo(InfoBase):
         self.rate = change_value_and_rate[1][:-2]
         
         #거래량(천주)
-        self.volume = info_table.find("td", {"id":"quant"}).get_text(strip=True)
+        self.volume = text_safety(info_table.find("td", {"id":"quant"}))
         
         #거래대금(백만)
-        self.transaction_price = info_table.find("td", {"id":"amount"}).get_text(strip=True)
+        self.transaction_price = text_safety(info_table.find("td", {"id":"amount"}))
         
         #장중고가
-        self.high_price = info_table.find("td", {"id":"high_value"}).get_text(strip=True)
+        self.high_price = text_safety(info_table.find("td", {"id":"high_value"}))
         
         #장중저가
-        self.low_price = info_table.find("td", {"id":"low_value"}).get_text(strip=True)
+        self.low_price = text_safety(info_table.find("td", {"id":"low_value"}))
         
         #차트 이미지 url
         self.chart_url = KOS_IMG_URL % int(time.time()*1000//1)
@@ -216,10 +228,9 @@ def main():
     if __name__ == "__main__":
         print("메인으로 실행")
         
-        hello=KOSInfo()
-        hello.get("KOSDAQ")
-        hello.change_graph_interval("년")
-        print(hello)
+        hello=StockInfo()
+        hello.get('005930')
+        
         
 
 main()
