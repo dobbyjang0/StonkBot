@@ -36,19 +36,7 @@ class MarketEvent(EventHandler):
             outblock_field = [outblock_field]
         for i in outblock_field:
             result[i] = self.com_obj.GetFieldData("OutBlock", i)
-        print(result)
         KRXRealData().update(result)
-
-
-# 실시간 체결가 수신 전용 클래스
-# class Market(XAReal):
-#     """
-#     사용안함
-#     """
-#     def __init__(self, event_handler):
-#         super().__init__(event_handler)
-#         self.context = {}
-
 
 # 뉴스 전용 실시간 이벤트 핸들러
 class NewsEvent(EventHandler):
@@ -72,6 +60,8 @@ class NewsEvent(EventHandler):
             result["code"] = ''
         print(result)
 
+
+
 def _shcode(market_type):
     """
     시장 구분별 종목코드를 모두 읽는다
@@ -92,9 +82,27 @@ def _shcode(market_type):
     result = [query.get_outblock('t8430OutBlock', "shcode", i)["shcode"] for i in range(out_count)]
     return result
 
+def _index_code():
+    """
+    업종코드 정보를 읽는다
+
+    Return:
+        'list' of upcode(업종코드)
+        001: 코스피
+        301: 코스닥
+    """
+    query = XAQuery()
+    in_field = {"gubun": ''}
+    query.set_inblock('t8424', in_field)
+    query.request()
+    out_count = query.get_count('t8424OutBlock')
+    result = [query.get_outblock('t8424OutBlock', "upcode", i)["upcode"] for i in range(out_count)]
+    return result
+
+
 def kospi_tickdata():
     """
-    KOSPI 모든종목
+    KOSPI 모든종목 실시간 감시
     종목코드, 체결시간, 전일대비구분, 전일대비, 등락율, 현재가, 시가, 고가, 저가, 누적거래량, 누적거래대금
     실시간 감시, db에 업데이트
     """
@@ -107,7 +115,7 @@ def kospi_tickdata():
 
 def kosdaq_tickdata():
     """
-    KOSDAQ 모든종목
+    KOSDAQ 모든종목 실시간 감시
     종목코드, 체결시간, 전일대비구분, 전일대비, 등락율, 현재가, 시가, 고가, 저가, 누적거래량, 누적거래대금
     실시간 감시, db에 업데이트
     """
@@ -118,51 +126,17 @@ def kosdaq_tickdata():
     kosdaq_data.set_outblock(["shcode", "chetime", "sign", "change", "drate", "price", "open", "high", "low", "volume", "value"])
     kosdaq_data.start()
 
-# 모든종목 정보
-# 데이터프레임으로
-# market 열이 0이면 코스피 1이면 코스닥
-# ETF 열이 0이면 일반종목, 1이면 ETF
-# 모듈간 순환참조를 피하기 위해 save_log_yesalchemy.py 로 이동함
-# def stock_name():
-#     """
-#     kospi, kosdaq에 존재하는 모든 종목에 대한 정보를 pandas 데이터프레임 객체로 반환
-#
-#     Returns:
-#         pandas dataframe object
-#
-#                code            name    market ETF
-#         0     000020          동화약품      1   0
-#         1     000040         KR모터스      1   0
-#         2     000050            경방      1   0
-#         3     000060         메리츠화재      1   0
-#         ...      ...           ...    ...  ..
-#
-#         Columns:
-#             code: 종목코드
-#             name: 종목명
-#             market: 시장구분
-#             ETF: ETF 구분
-#     """
-#     query = XAQuery()
-#     in_field = {"gubun": '0'}
-#     query.set_inblock('t8430', in_field)
-#     query.request()
-#     out_count = query.get_count('t8430OutBlock')
-#
-#     shcode = [query.get_outblock('t8430OutBlock', "shcode", i)["shcode"] for i in range(out_count)]
-#     hname = [query.get_outblock('t8430OutBlock', "hname", i)["hname"] for i in range(out_count)]
-#     gubun = ["KOSPI" if query.get_outblock('t8430OutBlock', "gubun", i)["gubun"] == '1' else "KOSDAQ" for i in range(out_count)]
-#     etfgubun = ["주식" if query.get_outblock('t8430OutBlock', "etfgubun", i)["etfgubun"] == '0' else "ETF" for i in range(out_count)]
-#
-#     data = {
-#         "code": shcode,
-#         "name": hname,
-#         "market": gubun,
-#         "ETF": etfgubun
-#     }
-#
-#     df = pd.DataFrame(data, columns = ["code", "name", "market", "ETF"])
-#     return df
+def index_tickdata():
+    """
+    업종별 지수
+    업종코드, 시간, 전일대비구분, 등락율, 현재지수, 시가지수, 고가지수, 저가지수, 상한종목수, 하한종목수, 상승종목비율, 외인순매수금액, 기관순매수금액
+
+    실시간 감시, db에 업데이트
+    """
+    login()
+    index = _index_code()
+    index_data = XAReal
+
 
 def news():
     """
@@ -181,12 +155,13 @@ def main():
     """
     if __name__ == "__main__":
         login()
-        StockInfoTable().update_table()
-        # process_kospi = multiprocessing.Process(target = kospi_tickdata)
-        # process_kosdaq = multiprocessing.Process(target = kosdaq_tickdata)
+        # StockInfoTable().update_table()
+
+        process_kospi = multiprocessing.Process(target = kospi_tickdata)
+        process_kosdaq = multiprocessing.Process(target = kosdaq_tickdata)
         # process_news = multiprocessing.Process(target = news)
-        # process_kospi.start()
-        # process_kosdaq.start()
+        process_kospi.start()
+        process_kosdaq.start()
         # process_news.start()
 
 main()
