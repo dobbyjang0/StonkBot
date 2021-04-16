@@ -193,8 +193,8 @@ async def 가즈아(ctx, stock_name="삼성전자", stock_price=None):
     if stock_code == None:
         return
     
-    if stock_price is not None:
-        if stock_price.isdigit() or stock_price[-1] != "층":
+    if not stock_price:
+        if type(stock_price) == int or stock_price[-1] != "층":
             await ctx.send("주식 가격이나 층수를 입력해주세요")
             return
     

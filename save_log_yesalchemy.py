@@ -40,6 +40,12 @@ class Table:
     def __init__(self):
         self.connection = Connection()
         #self.name 필요하려나?
+        
+# 트렌잭션 클래스, 나중에 수정 쉬우라고 만들어둠
+class Transection:
+    def __init__(self):
+        self.connection = Connection()
+        #self.name 필요하려나?
 
 #로그 테이블
 class LogTable(Table):
@@ -591,6 +597,8 @@ class KRXRealData(Table):
         result = self.connection.execute(sql, shcode = shcode).fetchone()
         return result
 
+class MockTransection(Transection):
+    pass
 
 #main 함수
 def main():
