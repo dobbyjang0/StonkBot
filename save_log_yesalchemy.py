@@ -645,7 +645,6 @@ class KRXIndexData(Table):
         sql = sql_text("""
                        INSERT INTO krx_real_data VALUES(:upcode, :time, :sign, :change, :drate, :jisu, :openjisu, :highjisu, :lowjisu, :upjo, :downjo, :upjrate, :frgsvalue, :orgsvalue)
                        ON DUPLICATE KEY UPDATE 
-                           `upcode` = :upcode,
                            `time` = :time,
                            `sign` = :sign,
                            `change` = :change,
