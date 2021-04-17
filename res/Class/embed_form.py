@@ -158,7 +158,7 @@ class mock_have(formbase):
     def insert(self, author, pd, *arg, **kwarg):
         self.embed.set_author(name=f'{author.name}님의 계좌입니다.', icon_url=str(author.avatar_url))
         
-        if not pd:
+        if pd.empty:
             self.embed.title = '지원금을 받아주세요!'
             return
         

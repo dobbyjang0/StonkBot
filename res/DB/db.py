@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-from xing_api import XASession
-from xing_api import XAQuery
-from xing_api import XAReal
-from xing_api import EventHandler
+from .xing_api import XASession
+from .xing_api import XAQuery
+from .xing_api import XAReal
+from .xing_api import EventHandler
 import sqlalchemy
 from sqlalchemy import create_engine
 from sqlalchemy import text as sql_text
@@ -27,7 +27,7 @@ class Connection():
                 return engine
             
             def quick_admin_login():
-                context = pandas.read_csv('admin_login_info.csv', header=None, index_col=0, squeeze=True).to_dict()
+                context = pandas.read_csv('./admin_login_info.csv', header=None, index_col=0, squeeze=True).to_dict()
                 connection = conn(**context)
                 print(connection)
     

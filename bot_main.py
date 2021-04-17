@@ -1,17 +1,20 @@
 import discord
 from discord.ext import commands, tasks
 import pandas
-import stock
-import save_log_yesalchemy as db
 from datetime import date
-from embed_form import embed_factory as ef
-import market_data
-import multiprocessing
-
 import nest_asyncio
 import asyncio
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-import triggers
+import multiprocessing
+
+from res.Class import stock
+from res.Class.embed_form import embed_factory as ef
+from res.Class import triggers
+
+from res.DB import db
+from res.DB import market_data
+
+
 
 nest_asyncio.apply()
 
