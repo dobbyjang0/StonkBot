@@ -73,6 +73,17 @@ class EventHandler:
         self.user_obj = user_obj
         self.com_obj = com_obj
 
+    def OnLogin(self):
+        pass
+    
+    def OnDisconnect(self):
+        pass
+    
+    def OnReceiveData(self):
+        pass
+    
+    def OnReceiveRealData(self):
+        pass
 
 # XASession 이벤트 처리
 class XASessionEvents(EventHandler):
