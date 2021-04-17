@@ -49,6 +49,22 @@ def compared_sign_to_emoji(number):
              '<:bottbott:832329922747564062>']
     return emoji[number]
 
+def rate_plus_sign(rate):
+    if rate>0:
+        return '+'
+    else:
+        return ''
+
+def make_arrow_sign(number):
+    if number > 0:
+        sign = compared_sign_to_emoji(2)
+    elif number < 0:
+        sign = compared_sign_to_emoji(4)
+    else:
+        sign = compared_sign_to_emoji(3)
+        
+    return sign
+
 #검색 관련
 #구식 파셔 디자인
 class serch_result(formbase):
@@ -67,16 +83,23 @@ class serch_result(formbase):
 
 #신식 이베스트 
 class serch_result2(formbase):
-    def insert(self, name, code, compared_sign, compared_price, rate, price, start_price,  high_price, low_price, volume, transaction_price, stock_market = None, *arg, **kwarg):
+    def insert(self, name, code, compared_sign, compared_price, rate, price, start_price, high_price, low_price, volume, transaction_price, chart_type, stock_market = None, *arg, **kwarg):
         
-        IMG_URL_BASE = "https://ssl.pstatic.net/imgfinance/chart/item/area/day/%s.png?sidcode=%d"
+        IMG_URL_BASE = "https://ssl.pstatic.net/imgfinance/chart/item/%s/%s.png?sidcode=%d"
         MAIN_URL_BASE = "https://finance.naver.com/item/main.nhn?code="
         
-        def rate_plus_sign(rate):
-            if rate>0:
-                return '+'
-            else:
-                return ''
+        def chart_type_change(chart_type):
+            chart_type_dic = {"일":"area/day", "주":"area/week", "월":"area/month3", "년":"area/year",
+                              "3년":"area/year3", "5년":"area/year5", "10년":"area/year10",
+                              "일봉":"candle/day", "주봉":"candle/week", "월봉":"candle/month"
+                              }
+            
+            result = chart_type_dic.get(chart_type)
+            
+            if not result:
+                result = "area/day"
+            
+            return result
         
         self.embed.title = name + ' ' + set_market_to_emoji(stock_market)
         self.embed.url = MAIN_URL_BASE + code
@@ -86,7 +109,7 @@ class serch_result2(formbase):
         self.embed.add_field(name="저가", value=low_price)
         self.embed.add_field(name="거래량(천주)", value=volume)
         self.embed.add_field(name="거래대금(백만)", value=transaction_price)
-        self.embed.set_image(url=IMG_URL_BASE % (code, int(time.time()*1000//1)))
+        self.embed.set_image(url=IMG_URL_BASE % (chart_type_change(chart_type), code, int(time.time()*1000//1)))
         
 
 class serch_list(formbase):
@@ -97,10 +120,9 @@ class serch_list(formbase):
         
 class calculate(formbase):
     def insert(self, stock_count, name, price, *arg, **kwarg):
-        price_int = int(price.replace(",",""))
-        total_stock_price = price_int * stock_count
+        total_stock_price = price * stock_count
         self.embed.title = f'{total_stock_price}원'
-        self.embed.set_footer(text=f'{name} {stock_count}주의 가격')
+        self.embed.set_footer(text=f'{name} {price} * {stock_count}주의 가격')
         
 #모의주식 관련
 #지원금 관련
@@ -136,10 +158,35 @@ class mock_sell(formbase):
 class mock_have(formbase):
     def insert(self, author, pd, *arg, **kwarg):
         self.embed.set_author(name=f'{author.name}님의 계좌입니다.', icon_url=str(author.avatar_url))
-        self.embed.title = f'원화 : {int(pd.iat[0, 1])}원'
-        #귀찮아서 이래놨는데 고치긴 해야할듯
-        self.embed.description = "\n".join(f'{pd.iat[idx,3]} : {int(pd.iat[idx,1])}주 {int(pd.iat[idx,2])}원' for idx in range(1,len(pd)))
+        
+        for idx in range(1,len(pd)):
+            stock_name = pd.iat[idx,3] 
+            stock_count = int(pd.iat[idx,1])
+            all_buy_price = pd.iat[idx,2]
+            all_present_price = pd.iat[idx,4]
+            
+            print([type(x) for x in [stock_name, stock_count, all_buy_price, all_present_price]])
 
+            profit = all_present_price - all_buy_price
+            profit_rate = round(profit/all_buy_price * 100, 2)
+            
+            field_title = f'{stock_name} {stock_count}주'
+            field_content = f'{int(all_present_price)}원 {make_arrow_sign(profit)}{int(profit)} {rate_plus_sign(profit_rate)}{profit_rate}%'
+            
+            self.embed.add_field(name=field_title, value=field_content, inline=False)
+        #self.embed.description = "\n".join(f'{pd.iat[idx,3]} : {int(pd.iat[idx,1])}주 {int(pd.iat[idx,2])}원' for idx in range(1,len(pd)))
+        sum_buy = sum(pd.loc[1:, 'sum_value'])
+        sum_present = sum(pd.loc[1:, 'now_price'])
+        won = int(pd.iat[0, 1])
+        
+        sum_profit = sum_present - sum_buy
+        sum_rate = round(sum_profit/(sum_buy+won) * 100, 2)
+        
+        # 현금도 계산에 합칠지 말지 고민좀 해봐야 될 듯
+        self.embed.title = f'총 자산 가치 : {int(sum_present+won)}원 {make_arrow_sign(sum_profit)}{int(sum_profit)} {rate_plus_sign(sum_rate)}{sum_rate}%'
+        self.embed.set_footer(text=f'원화 : {won}원')
+        
+        
 #가즈아 관련     
 class gazua(formbase):
     def insert(self, stock_name, gazua_count, stock_price=None, *arg, **kwarg):
