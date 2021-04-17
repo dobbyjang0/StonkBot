@@ -409,12 +409,17 @@ class AccountTable(Table):
     #계좌 자산을 이름과 같이 읽는다.
     def read_all(self, author_id):
         sql = sql_text("""
-                       SELECT ua.stock_code, ua.balance, ua.sum_value, sc.name
+                       SELECT ua.stock_code, ua.balance, ua.sum_value, sc.name, 
+                           CASE WHEN rd.price*ua.balance IS NULL 
+                           THEN ua.sum_value
+                           ELSE rd.price*ua.balance END 
+                           AS now_price
                        FROM (
                            SELECT stock_code, balance, sum_value
                            FROM `account`
                            WHERE author_id = :author_id) AS ua
                        LEFT JOIN `stock_code` AS sc ON ua.stock_code = sc.code
+                       LEFT JOIN `krx_real_data` AS rd ON ua.stock_code = rd.shcode
                        ORDER BY FIELD(stock_code, 'KRW') DESC, balance DESC;
                        """)
         df = pandas.read_sql_query(sql = sql, con = self.connection, params={"author_id": author_id})
@@ -595,7 +600,13 @@ class KRXRealData(Table):
                        FROM `krx_real_data`
                        WHERE shcode = :shcode;
                        """)
-        result = self.connection.execute(sql, shcode = shcode).fetchone()
+        price = self.connection.execute(sql, shcode = shcode).fetchone()
+        
+        if price:
+            result = price[0]
+        else:
+            result = None
+        
         return result
     
 class MockTransection(Transection):
@@ -750,11 +761,12 @@ class KRXIndexData(Table):
 
 #main 함수
 def main():
-    # import market_data
-    # market_data.login()
-    # StockInfoTable().update_table()
-    a = KRXNewsData()
-    a.create_table()
+    #import market_data
+    #market_data.login()
+    #KRXIndexData().update()
+    #a = KRXIndexData()
+    #a.create_table()
+    pass
 
 if __name__ == "__main__":
     main()
