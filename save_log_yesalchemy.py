@@ -298,7 +298,7 @@ class StockInfoTable(Table):
                        ORDER BY name ASC
                        LIMIT 10
                        """)
-        df = pandas.read_sql_query(sql = sql, con = self.connection, params={"stock_name":stock_name+"%"})
+        df = pandas.read_sql_query(sql = sql, con = self.connection, params={"stock_name":"%"+stock_name+"%"})
 
         return df
     
