@@ -39,6 +39,7 @@ async def on_ready():
     사용전에 save_log_yesalchemy.KRXRealData 클래스의 create_table 꼭 실행할것
     """
     
+    '''
     market_data.login()
     process_kospi = multiprocessing.Process(target=market_data.kospi_tickdata)
     process_kosdaq = multiprocessing.Process(target=market_data.kosdaq_tickdata)
@@ -48,6 +49,7 @@ async def on_ready():
     process_index.start()
     
     print('실시간 데이터 시작')
+    '''
     
     sched = AsyncIOScheduler(timezone="Asia/Seoul")
     sched.add_job(triggers.db_update(bot).process, 'cron', hour=4)
@@ -257,119 +259,24 @@ async def mock_support_fund(ctx):
             await ctx.send(embed=ef("mock_support_no").get)
 
 @bot.command(name="매수")
-async def mock_buy(ctx, stock_name=None, stock_count=1):
-    user_id = ctx.author.id
-    #입력 오류
-    if stock_name is None:
-        await ctx.send("거래할 주식을 입력해주세요.")
-        return
-    if type(stock_count) != int:
-        await ctx.send("수량에 숫자를 입력해주세요.")
-        return
-    stock_code, stock_name, __, __ = await serch_stock_by_bot(ctx, stock_name)
-    
-    if stock_code is None:
-        await ctx.send("올바르지 않는 주식명")
-        return
-    
-    stock_price = db.KRXRealData().read_price(stock_code)
-    
-    if stock_price is None:
-        await ctx.send("거래 정지 종목입니다.")
-        return
-    
-    print(stock_price)
-    total_stock_price = stock_price * stock_count
-    
-    # 계좌의 돈을 불러온다
-    krw_account = db.AccountTable().read(user_id,"KRW")
-    if krw_account is None:
-        await ctx.send("지원금을 받아주세요.")
-        return
-    krw_money = int(krw_account[1])
-        
-    # 돈이 없으면 취소
-    if krw_money < total_stock_price:
-        await ctx.send("돈 없음")
-        await ctx.send(f"최대 {krw_money//stock_price}주 가능")
-        return
-    # 돈이 있으면 계좌 돈 감소, 주식 갯수 증가
-    trade_result = db.MockTransection().buy(user_id, stock_code, stock_count, total_stock_price)
-    
-    if trade_result:
-        input_variable={"guild_id" : ctx.guild.id, "channel_id" : ctx.channel.id,
-                        "author_id" : ctx.author.id, "stock_code" : stock_code,
-                        "stock_value" : stock_price
-                        }
-        
-        try:
-            db.LogTable().insert_mock_log(mock_type="매수",stock_count=stock_count,**input_variable)
-        except:
-            print("로그 저장 에러")
-            
-        await ctx.send(embed=ef("mock_buy", stock_name, stock_count, stock_price, total_stock_price).get)
-    else:
-        await ctx.send('오류 : 거래실패')
+async def mock_buy(ctx, stock_name=None, stock_count='1'):
+     mock = bot.get_cog('mock_trans')
+     await mock.mock_buy(ctx, stock_name, stock_count)
 
+@bot.command(name="풀매수")
+async def mock_buy_full(ctx, stock_name=None):
+     mock = bot.get_cog('mock_trans')
+     await mock.mock_buy(ctx, stock_name, '풀')
+    
 @bot.command(name="매도")
-async def mock_sell(ctx, stock_name=None, stock_count=1):
-    user_id = ctx.author.id
-    #입력 오류
-    if stock_name is None:
-        await ctx.send("거래할 주식을 입력해주세요.")
-        return
-    if type(stock_count) != int:
-        await ctx.send("수량을 입력해주세요.")
-        return
+async def mock_sell(ctx, stock_name=None, stock_count='1'):
+    mock = bot.get_cog('mock_trans')
+    await mock.mock_sell(ctx, stock_name, stock_count)
     
-    stock_code, stock_name, __, __ = await serch_stock_by_bot(ctx, stock_name)
-
-    if stock_code is None:
-        await ctx.send("올바르지 않는 주식명")
-        return
-
-    stock_price = db.KRXRealData().read_price(stock_code)
-
-    if stock_price is None:
-        await ctx.send("거래 정지 종목입니다.")
-        return
-    
-    total_stock_price = stock_price * stock_count
-    
-    # 계좌에 주식이 있는지 확인
-    stock_account = db.AccountTable().read(user_id, stock_code)
-    if stock_account is None:
-        await ctx.send("팔고자 하는 주식이 없습니다.")
-        return
-    
-    balance = int(stock_account[0])
-    sum_value = stock_account[1]
-    sell_sum_value = sum_value*stock_count/balance
-    profit = total_stock_price - sell_sum_value
-    
-    # 보유 주식이 팔려는 갯수보다 적으면 취소
-    if balance < stock_count:
-        await ctx.send("팔고자 하는 주식이 적습니다")
-        await ctx.send(f"최대 {balance}주 가능")
-        return
-    
-    # 갯수가 충분하면 주식 갯수 감소, 계좌 돈 증가 
-    trade_result = db.MockTransection().sell(user_id, stock_code, stock_count, total_stock_price)
-    
-    if trade_result:
-        input_variable={"guild_id" : ctx.guild.id, "channel_id" : ctx.channel.id,
-                        "author_id" : ctx.author.id, "stock_code" : stock_code,
-                        "stock_value" : stock_price
-                        }
-        
-        try:
-            db.LogTable().insert_mock_log(mock_type="매도",stock_count=stock_count,**input_variable)
-        except:
-            print("로그 저장 에러")
-            
-        await ctx.send(embed=ef("mock_sell", stock_name, stock_count, stock_price, total_stock_price, profit).get)
-    else:
-        await ctx.send('오류 : 거래실패, 거래가 취소되었습니다.')
+@bot.command(name="풀매도")
+async def mock_sell_full(ctx, stock_name=None, stock_count='1'):
+    mock = bot.get_cog('mock_trans')
+    await mock.mock_sell(ctx, stock_name, '풀')
 
 
 @bot.command(name="보유")

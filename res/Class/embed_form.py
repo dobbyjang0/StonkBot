@@ -142,13 +142,15 @@ class mock_support_no(formbase):
         
 #매매 관련
 class mock_buy(formbase):
-    def insert(self, name, count, price, total_price, *arg, **kwarg):
+    def insert(self, author, name, count, price, total_price, *arg, **kwarg):
+        self.embed.set_author(name=f'{author.name}', icon_url=str(author.avatar_url))
         self.embed.title= f"🔴 {name} {count}주 매수 완료되었습니다."
         self.embed.add_field(name='단가', value=price)
         self.embed.add_field(name='총 금액', value=total_price)   
 
 class mock_sell(formbase):
-    def insert(self, name, count, price, total_price, profit, *arg, **kwarg):
+    def insert(self, author, name, count, price, total_price, profit, *arg, **kwarg):
+        self.embed.set_author(name=f'{author.name}', icon_url=str(author.avatar_url))
         self.embed.title= f"🔵 {name} {count}주 매도 완료되었습니다."
         self.embed.add_field(name='단가', value=price)
         self.embed.add_field(name='총 금액', value=total_price)
@@ -270,14 +272,19 @@ class help_mock(formbase):
     def init_make(self):
         IMG_URL = 'https://media.discordapp.net/attachments/813006733881376778/814116320123551744/1.png?width=672&height=676'
         self.embed.set_author(name='모의 관련 설명', icon_url = IMG_URL)
-        self.embed.title = '`지원금` `매수` `매도` `보유` `도움`'
+        self.embed.title = '`지원금` `매수` `매도` `보유` `도움` `풀매수` `풀매도`'
         description_list = ['`지원금` : 매일마다 지원금을 받습니다',
                             '`보유` : 보유하고 있는 주식 목록 및 원화를 보여줍니다',
                             '`매수` : -매수 `<주식 이름/코드>` `<주식 갯수/가격>`',
                             '`매도` : -매도 `<주식 이름/코드>` `<주식 갯수/가격>`',
+                            '`풀매수` `풀매도` : 최대한 매수/매도합니다',
                             '`도움` : 도움말을 보여줍니다',
-                            '`<주식 갯수 또는 가격>` : 끝에 `주` 또는 아무것도 붙이지 않는다면 해당 갯수만큼의 주식을 사고 팝니다.',
-                            '끝에 `원`이라고 입력시 해당 돈에서 최대한 살 수 있는 만큼의 주식을 삽니다'
+                            '',
+                            '`<주식 갯수/가격>` 입력시 실행방식',
+                            ' `숫자` : 해당 갯수만큼의 주식을 사고 팝니다.',
+                            ' `최대`, `풀`, `반` : 최대 또는 반만큼의 주식을 사고 팝니다.',                            
+                            ' `00원` : 해당 돈에서 최대한 할 수 있는 만큼의 주식을 사고 팝니다',
+                            ' `00%` : 해당 퍼센트 만큼의 주식을 사고 팝니다'
                              ]
         self.embed.description = "\n".join(x for x in description_list)
 

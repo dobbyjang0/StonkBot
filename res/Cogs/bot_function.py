@@ -106,7 +106,7 @@ class serch_stock(commands.Cog):
     
         return serching_stock
     #주식 코드인지 아닌지 확인
-    def is_stock_code(stock_code):
+    def is_stock_code(self, stock_code):
         stock_name = db.StockInfoTable().read_stock_code(stock_code)
     
         return (stock_name is not None)
