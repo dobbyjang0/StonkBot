@@ -35,8 +35,10 @@ async def on_ready():
     market_data.login()
     process_kospi = multiprocessing.Process(target=market_data.kospi_tickdata)
     process_kosdaq = multiprocessing.Process(target=market_data.kosdaq_tickdata)
+    process_index = multiprocessing.Process(target=market_data.index_tickdata)
     process_kospi.start()
     process_kosdaq.start()
+    process_index.start()
     
     print('실시간 데이터 시작')
     
@@ -66,7 +68,7 @@ async def 테스트(ctx):
 async def help_all(ctx, help_input=None):
     help_type_dic = {None:'help_all', '주식':'help_serch', '검색':'help_serch',
                      '모의':'help_mock', '코스피':'help_kos', '코스닥':'help_kos',
-                     '가즈아':'help_gazua', '계산':'help_calculate'}
+                     '가즈아':'help_gazua', '계산':'help_calculate', '매매동향':'help_trend'}
     
     help_type = help_type_dic.get(help_input)
     if not help_type:
@@ -167,20 +169,42 @@ async def 계산(ctx, stock_name="도움", stock_count=1):
     await ctx.send(embed=ef("calculate", stock_count=stock_count, name=stock_name, price=stock_price).get)
     # 나중에 수수료 계산도 넣어주자
 
+@bot.command()
+async def 매매동향(ctx, stock_name='도움', input_type=None, chart_type=None):
+    if stock_name == "도움":
+        #await ctx.send(embed=ef('help_gazua').get)
+        return
+    if input_type not in ['외국인', '기관']:
+        await ctx.send('외국인, 기관 입력해주세요')
+        return
+    
+    #주식 검색
+    stock_code, stock_name, __, __ = await serch_stock_by_bot(ctx, stock_name)
+    
+    if stock_code == None:
+        return
+    
+    await ctx.send(embed=ef('trading_trend', name=stock_name, code=stock_code, input_type=input_type, chart_type=chart_type).get)
+    
+               
 #가즈아 기능
 #나중에 가격도 검색해서 로그에 넣게 바꾸기?
 @bot.command()
-async def 가즈아(ctx, stock_name="삼성전자", stock_price=None):
+async def 가즈아(ctx, stock_name="도움", stock_price=None):
+    if stock_name == "도움":
+        await ctx.send(embed=ef('help_gazua').get)
+        return
+    
     #주식 검색
     stock_code, stock_real_name, __, __ = await serch_stock_by_bot(ctx, stock_name)
     
     if stock_code == None:
         return
     
-    if not stock_price:
-        if type(stock_price) == int or stock_price[-1] != "층":
-            await ctx.send("주식 가격이나 층수를 입력해주세요")
-            return
+    if stock_price and type(stock_price) != int:
+        await ctx.send('숫자를 입력해주세요')
+        return
+    
     
     #로그에 넣는다
     input_variable={"guild_id" : ctx.guild.id, "channel_id" : ctx.channel.id,
@@ -190,12 +214,7 @@ async def 가즈아(ctx, stock_name="삼성전자", stock_price=None):
     
     db.LogTable().insert_gazua_log(**input_variable)
     
-    gazua_count = db.GazuaCountTable().read(stock_code)
-    if not gazua_count:
-        gazua_count = gazua_count[0]
-    else:
-        gazua_count = 0
-    
+    gazua_count = db.GazuaCountTable().read(stock_code)    
     db.GazuaCountTable().insert_update(stock_code)
     
     #주식코드를 기본키로 해서 추가?
@@ -203,16 +222,7 @@ async def 가즈아(ctx, stock_name="삼성전자", stock_price=None):
     return
     
 # 모의 주식 관련 커맨드
-@bot.group(name="모의")
-async def mock(ctx):
-    pass
-
-@mock.command(name="도움")
-async def mock_help(ctx):
-    await ctx.send(embed=ef('help_mock').get)
-    return
-
-@mock.command(name="지원금")
+@bot.command(name="지원금")
 async def mock_support_fund(ctx):
     user_id = ctx.author.id
     try:
@@ -239,7 +249,7 @@ async def mock_support_fund(ctx):
         else:
             await ctx.send(embed=ef("mock_support_no").get)
 
-@mock.command(name="매수")
+@bot.command(name="매수")
 async def mock_buy(ctx, stock_name=None, stock_count=1):
     user_id = ctx.author.id
     #입력 오류
@@ -294,7 +304,7 @@ async def mock_buy(ctx, stock_name=None, stock_count=1):
     else:
         await ctx.send('오류 : 거래실패')
 
-@mock.command(name="매도")
+@bot.command(name="매도")
 async def mock_sell(ctx, stock_name=None, stock_count=1):
     user_id = ctx.author.id
     #입력 오류
@@ -355,7 +365,7 @@ async def mock_sell(ctx, stock_name=None, stock_count=1):
         await ctx.send('오류 : 거래실패, 거래가 취소되었습니다.')
 
 
-@mock.command(name="보유")
+@bot.command(name="보유")
 async def mock_have(ctx, stock_name=None, stock_count=1):
     user_id = ctx.author.id
     fund_list = db.AccountTable().read_all(user_id)

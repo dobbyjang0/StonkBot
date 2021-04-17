@@ -410,7 +410,7 @@ class AccountTable(Table):
     def read_all(self, author_id):
         sql = sql_text("""
                        SELECT ua.stock_code, ua.balance, ua.sum_value, sc.name, 
-                           CASE WHEN rd.price*ua.balance IS NULL 
+                           CASE WHEN rd.price IS NULL 
                            THEN ua.sum_value
                            ELSE rd.price*ua.balance END 
                            AS now_price
@@ -424,6 +424,9 @@ class AccountTable(Table):
                        """)
         df = pandas.read_sql_query(sql = sql, con = self.connection, params={"author_id": author_id})
         return df
+    
+    def read_rank(self, stock_code = 'KRW'):
+        pass
 
     # 계좌 자산 업데이트(유저, 자산종류, 수량)
     # balance는 가상화폐일경우 소수점 8자리까지, KRW나 현물 주식일 경우 정수로 입력
