@@ -622,7 +622,7 @@ class MockTransection(Transection):
                        
         sql_update = sql_text("""
                        UPDATE `account`
-                       SET balance = balance - (:stock_value)
+                       SET balance = balance - (:balance), sum_value = sum_value - (:stock_value)
                        WHERE author_id = :author_id and stock_code = 'KRW';
                        """)
          
@@ -651,7 +651,7 @@ class MockTransection(Transection):
                        
         sql_update_2 = sql_text("""
                        UPDATE `account`
-                       SET balance = balance + (:stock_value)
+                       SET balance = balance + (:balance), sum_value = sum_value + (:stock_value)
                        WHERE author_id = :author_id and stock_code = 'KRW';
                        """)
         

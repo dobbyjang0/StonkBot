@@ -7,7 +7,6 @@ def embed_factory(form_name, *arg, **kwarg):
     output = eval(form_name)(*arg, **kwarg)
     return output
 
-    
 #아래의 form들은 모두 이 클래스를 상속할 것
 class formbase:
     def __init__(self, *arg, **kwarg):
@@ -159,6 +158,10 @@ class mock_have(formbase):
     def insert(self, author, pd, *arg, **kwarg):
         self.embed.set_author(name=f'{author.name}님의 계좌입니다.', icon_url=str(author.avatar_url))
         
+        if not pd:
+            self.embed.title = '지원금을 받아주세요!'
+            return
+        
         for idx in range(1,len(pd)):
             stock_name = pd.iat[idx,3] 
             stock_count = int(pd.iat[idx,1])
@@ -175,19 +178,21 @@ class mock_have(formbase):
             
             self.embed.add_field(name=field_title, value=field_content, inline=False)
         #self.embed.description = "\n".join(f'{pd.iat[idx,3]} : {int(pd.iat[idx,1])}주 {int(pd.iat[idx,2])}원' for idx in range(1,len(pd)))
-        sum_buy = sum(pd.loc[1:, 'sum_value'])
-        sum_present = sum(pd.loc[1:, 'now_price'])
-        won = int(pd.iat[0, 1])
+        
+        print(pd.columns)
+        sum_buy = sum(pd.loc[:, 'sum_value'])
+        sum_present = sum(pd.loc[:, 'now_price'])
+        won = int(pd.iat[0, 2])
         
         sum_profit = sum_present - sum_buy
-        sum_rate = round(sum_profit/(sum_buy+won) * 100, 2)
+        sum_rate = round(sum_profit/sum_buy * 100, 2)
         
         # 현금도 계산에 합칠지 말지 고민좀 해봐야 될 듯
-        self.embed.title = f'총 자산 가치 : {int(sum_present+won)}원 {make_arrow_sign(sum_profit)}{int(sum_profit)} {rate_plus_sign(sum_rate)}{sum_rate}%'
+        self.embed.title = f'총 자산 가치 : {int(sum_present)}원 {make_arrow_sign(sum_profit)}{int(sum_profit)} {rate_plus_sign(sum_rate)}{sum_rate}%'
         self.embed.set_footer(text=f'원화 : {won}원')
         
         
-#가즈아 관련     
+#가즈아 관련
 class gazua(formbase):
     def insert(self, stock_name, gazua_count, stock_price=None, *arg, **kwarg):
         if stock_price is None:
@@ -230,8 +235,8 @@ class trading_trend(formbase):
         
         self.embed.title = f"{name} {input_type} 매매동황"
         url = IMG_URL_BASE % (chart_type_change(chart_type), input_type_change(input_type), code)
-        print(url)
         self.embed.set_image(url=url)
+
 
 class testembed(formbase):
     def init_make(self):

@@ -235,7 +235,7 @@ async def mock_support_fund(ctx):
     #처음일경우 지원금 500만
     if fund_get_result is None:
         db.SupportFundTable().insert(user_id)
-        db.AccountTable().insert(user_id, "KRW", 3000000, None)
+        db.AccountTable().insert(user_id, "KRW", 3000000, 3000000)
         await ctx.send(embed=ef("mock_support_first").get)
         return
     #아닐경우 매일마다 3만
@@ -243,7 +243,7 @@ async def mock_support_fund(ctx):
         last_get_time, get_count = fund_get_result
         if date.today() != last_get_time:
             db.SupportFundTable().update(user_id)
-            db.AccountTable().update(user_id, "KRW", 30000, None)
+            db.AccountTable().update(user_id, "KRW", 30000, 30000)
             await ctx.send(embed=ef("mock_support_second", get_count).get)
             #후원하면 지원금 묵혀서 얻는 것은 어떨까
         else:
@@ -279,7 +279,7 @@ async def mock_buy(ctx, stock_name=None, stock_count=1):
     if krw_account is None:
         await ctx.send("지원금을 받아주세요.")
         return
-    krw_money = int(krw_account[0])
+    krw_money = int(krw_account[1])
         
     # 돈이 없으면 취소
     if krw_money < total_stock_price:
