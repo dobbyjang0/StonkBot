@@ -20,6 +20,10 @@ nest_asyncio.apply()
 
 bot = commands.Bot(command_prefix="-")
 
+extensions = [
+    "res.Cogs.bot_function",
+    "res.Cogs.mock"
+]
 
 @bot.event
 async def on_ready():
@@ -484,6 +488,15 @@ async def get_stock_info(ctx, stock_name):
 def main():
     if __name__ == "__main__":
         #봇 실행
+        
+        for extension in extensions:
+            try:
+                bot.load_extension(extension)
+            except Exception as error:
+                print('fail to load %s: %s' % (extension, error))
+            else:
+                print('loaded %s' % extension)
+
         with open("bot_token.txt", mode='r', encoding='utf-8') as txt:
             bot_token = txt.read()
         bot.run(bot_token)
