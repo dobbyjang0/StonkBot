@@ -1,3 +1,5 @@
+import win32com.client
+import pythoncom
 from xing_api import XASession
 from xing_api import XAQuery
 from xing_api import XAReal
@@ -10,6 +12,7 @@ from save_log_yesalchemy import KRXIndexData
 import pandas as pd
 import multiprocessing
 import datetime
+import time
 
 # 로그인
 def login():
@@ -180,10 +183,11 @@ def main():
         # process_kospi = multiprocessing.Process(target = kospi_tickdata)
         # process_kosdaq = multiprocessing.Process(target = kosdaq_tickdata)
         # process_news = multiprocessing.Process(target = news)
-        process_index = multiprocessing.Process(target=index_tickdata)
+        # process_index = multiprocessing.Process(target=index_tickdata)
         # process_kospi.start()
         # process_kosdaq.start()
         # process_news.start()
-        process_index.start()
+        # process_index.start()
+        # print(len(a))
 
 main()
