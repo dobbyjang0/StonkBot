@@ -1,6 +1,8 @@
 ### CUSTOM ###
 admin_login_info.csv
+admin_login_info.json
 bot_token.txt
+bot_token.json
 xingplus.log
 xing_user.json
 xing_user2.json

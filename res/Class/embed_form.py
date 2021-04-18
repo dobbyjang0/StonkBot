@@ -37,15 +37,15 @@ def set_market_to_emoji(market):
     return output
 
 def number_to_emoji(number):
-    emoji = ["0️⃣","1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"]
+    emoji = ("0️⃣","1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟")
     return emoji[number]
 
 def compared_sign_to_emoji(number):
-    emoji = [None, '<:toptop:832329922634448896>',
+    emoji = (None, '<:toptop:832329922634448896>',
              '<:upup:832329922622128198>',
              '<:samesame:832329922604302356>',
              '<:downdown:832329922571141150>',
-             '<:bottbott:832329922747564062>']
+             '<:bottbott:832329922747564062>')
     return emoji[number]
 
 def rate_plus_sign(rate):
@@ -225,6 +225,7 @@ class trading_trend(formbase):
             result = chart_type_dic.get(chart_type)
             
             if not result:
+                chart_type = "월"
                 result = "month1"
             
             return result
@@ -235,7 +236,7 @@ class trading_trend(formbase):
             result = input_type_dic.get(input_type)
             return result
         
-        self.embed.title = f"{name} {input_type} 매매동황"
+        self.embed.title = f"{name} {input_type} 매매동향 {chart_type}"
         url = IMG_URL_BASE % (chart_type_change(chart_type), input_type_change(input_type), code)
         self.embed.set_image(url=url)
 
@@ -283,8 +284,8 @@ class help_mock(formbase):
                             '`<주식 갯수/가격>` 입력시 실행방식',
                             ' `숫자` : 해당 갯수만큼의 주식을 사고 팝니다.',
                             ' `최대`, `풀`, `반` : 최대 또는 반만큼의 주식을 사고 팝니다.',                            
-                            ' `00원` : 해당 돈에서 최대한 할 수 있는 만큼의 주식을 사고 팝니다',
-                            ' `00%` : 해당 퍼센트 만큼의 주식을 사고 팝니다'
+                            ' `원` : 해당 돈에서 최대한 할 수 있는 만큼의 주식을 사고 팝니다 ex) 100원',
+                            ' `%` : 해당 퍼센트 만큼의 주식을 사고 팝니다 ex) 42%'
                              ]
         self.embed.description = "\n".join(x for x in description_list)
 

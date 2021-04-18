@@ -12,7 +12,7 @@ from sqlalchemy.orm import sessionmaker
 
 import pymysql
 import pandas
-
+import json
 
 
 #싱글톤 커낵션, 아니 이거 걍 이래놔도 되나? 시발?
@@ -27,8 +27,22 @@ class Connection():
                 return engine
             
             def quick_admin_login():
-                context = pandas.read_csv('./admin_login_info.csv', header=None, index_col=0, squeeze=True).to_dict()
-                connection = conn(**context)
+                
+                '''
+                admin_loging_info.json 구조
+                {"user" : "dobbyjang0",
+                 "password" : "1234",
+                 "host" : "127.0.0.1",
+                 "port" : "3306",
+                 "db" : "stonk_bot",
+                 "charset" : "utf8"}
+                '''
+                
+                file_path = "./admin_login_info.json"
+                with open(file_path, "r") as json_file:
+                    user = json.load(json_file)
+
+                connection = conn(**user)
                 print(connection)
     
                 return connection
