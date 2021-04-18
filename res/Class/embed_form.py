@@ -7,7 +7,6 @@ def embed_factory(form_name, *arg, **kwarg):
     output = eval(form_name)(*arg, **kwarg)
     return output
 
-    
 #아래의 form들은 모두 이 클래스를 상속할 것
 class formbase:
     def __init__(self, *arg, **kwarg):
@@ -38,15 +37,15 @@ def set_market_to_emoji(market):
     return output
 
 def number_to_emoji(number):
-    emoji = ["0️⃣","1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟"]
+    emoji = ("0️⃣","1️⃣","2️⃣","3️⃣","4️⃣","5️⃣","6️⃣","7️⃣","8️⃣","9️⃣","🔟")
     return emoji[number]
 
 def compared_sign_to_emoji(number):
-    emoji = [None, '<:toptop:832329922634448896>',
+    emoji = (None, '<:toptop:832329922634448896>',
              '<:upup:832329922622128198>',
              '<:samesame:832329922604302356>',
              '<:downdown:832329922571141150>',
-             '<:bottbott:832329922747564062>']
+             '<:bottbott:832329922747564062>')
     return emoji[number]
 
 def rate_plus_sign(rate):
@@ -143,13 +142,15 @@ class mock_support_no(formbase):
         
 #매매 관련
 class mock_buy(formbase):
-    def insert(self, name, count, price, total_price, *arg, **kwarg):
+    def insert(self, author, name, count, price, total_price, *arg, **kwarg):
+        self.embed.set_author(name=f'{author.name}', icon_url=str(author.avatar_url))
         self.embed.title= f"🔴 {name} {count}주 매수 완료되었습니다."
         self.embed.add_field(name='단가', value=price)
         self.embed.add_field(name='총 금액', value=total_price)   
 
 class mock_sell(formbase):
-    def insert(self, name, count, price, total_price, profit, *arg, **kwarg):
+    def insert(self, author, name, count, price, total_price, profit, *arg, **kwarg):
+        self.embed.set_author(name=f'{author.name}', icon_url=str(author.avatar_url))
         self.embed.title= f"🔵 {name} {count}주 매도 완료되었습니다."
         self.embed.add_field(name='단가', value=price)
         self.embed.add_field(name='총 금액', value=total_price)
@@ -158,6 +159,10 @@ class mock_sell(formbase):
 class mock_have(formbase):
     def insert(self, author, pd, *arg, **kwarg):
         self.embed.set_author(name=f'{author.name}님의 계좌입니다.', icon_url=str(author.avatar_url))
+        
+        if pd.empty:
+            self.embed.title = '지원금을 받아주세요!'
+            return
         
         for idx in range(1,len(pd)):
             stock_name = pd.iat[idx,3] 
@@ -175,19 +180,21 @@ class mock_have(formbase):
             
             self.embed.add_field(name=field_title, value=field_content, inline=False)
         #self.embed.description = "\n".join(f'{pd.iat[idx,3]} : {int(pd.iat[idx,1])}주 {int(pd.iat[idx,2])}원' for idx in range(1,len(pd)))
-        sum_buy = sum(pd.loc[1:, 'sum_value'])
-        sum_present = sum(pd.loc[1:, 'now_price'])
-        won = int(pd.iat[0, 1])
+        
+        print(pd.columns)
+        sum_buy = sum(pd.loc[:, 'sum_value'])
+        sum_present = sum(pd.loc[:, 'now_price'])
+        won = int(pd.iat[0, 2])
         
         sum_profit = sum_present - sum_buy
-        sum_rate = round(sum_profit/(sum_buy+won) * 100, 2)
+        sum_rate = round(sum_profit/sum_buy * 100, 2)
         
         # 현금도 계산에 합칠지 말지 고민좀 해봐야 될 듯
-        self.embed.title = f'총 자산 가치 : {int(sum_present+won)}원 {make_arrow_sign(sum_profit)}{int(sum_profit)} {rate_plus_sign(sum_rate)}{sum_rate}%'
+        self.embed.title = f'총 자산 가치 : {int(sum_present)}원 {make_arrow_sign(sum_profit)}{int(sum_profit)} {rate_plus_sign(sum_rate)}{sum_rate}%'
         self.embed.set_footer(text=f'원화 : {won}원')
         
         
-#가즈아 관련     
+#가즈아 관련
 class gazua(formbase):
     def insert(self, stock_name, gazua_count, stock_price=None, *arg, **kwarg):
         if stock_price is None:
@@ -218,6 +225,7 @@ class trading_trend(formbase):
             result = chart_type_dic.get(chart_type)
             
             if not result:
+                chart_type = "월"
                 result = "month1"
             
             return result
@@ -228,10 +236,10 @@ class trading_trend(formbase):
             result = input_type_dic.get(input_type)
             return result
         
-        self.embed.title = f"{name} {input_type} 매매동황"
+        self.embed.title = f"{name} {input_type} 매매동향 {chart_type}"
         url = IMG_URL_BASE % (chart_type_change(chart_type), input_type_change(input_type), code)
-        print(url)
         self.embed.set_image(url=url)
+
 
 class testembed(formbase):
     def init_make(self):
@@ -265,14 +273,19 @@ class help_mock(formbase):
     def init_make(self):
         IMG_URL = 'https://media.discordapp.net/attachments/813006733881376778/814116320123551744/1.png?width=672&height=676'
         self.embed.set_author(name='모의 관련 설명', icon_url = IMG_URL)
-        self.embed.title = '`지원금` `매수` `매도` `보유` `도움`'
+        self.embed.title = '`지원금` `매수` `매도` `보유` `도움` `풀매수` `풀매도`'
         description_list = ['`지원금` : 매일마다 지원금을 받습니다',
                             '`보유` : 보유하고 있는 주식 목록 및 원화를 보여줍니다',
                             '`매수` : -매수 `<주식 이름/코드>` `<주식 갯수/가격>`',
                             '`매도` : -매도 `<주식 이름/코드>` `<주식 갯수/가격>`',
+                            '`풀매수` `풀매도` : 최대한 매수/매도합니다',
                             '`도움` : 도움말을 보여줍니다',
-                            '`<주식 갯수 또는 가격>` : 끝에 `주` 또는 아무것도 붙이지 않는다면 해당 갯수만큼의 주식을 사고 팝니다.',
-                            '끝에 `원`이라고 입력시 해당 돈에서 최대한 살 수 있는 만큼의 주식을 삽니다'
+                            '',
+                            '`<주식 갯수/가격>` 입력시 실행방식',
+                            ' `숫자` : 해당 갯수만큼의 주식을 사고 팝니다.',
+                            ' `최대`, `풀`, `반` : 최대 또는 반만큼의 주식을 사고 팝니다.',                            
+                            ' `원` : 해당 돈에서 최대한 할 수 있는 만큼의 주식을 사고 팝니다 ex) 100원',
+                            ' `%` : 해당 퍼센트 만큼의 주식을 사고 팝니다 ex) 42%'
                              ]
         self.embed.description = "\n".join(x for x in description_list)
 

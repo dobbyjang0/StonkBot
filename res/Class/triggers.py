@@ -1,4 +1,4 @@
-import save_log_yesalchemy as db
+from ..DB import db
 
 class db_update:
     def __init__(self, bot):
