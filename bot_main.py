@@ -218,7 +218,7 @@ async def 가즈아(ctx, stock_name="도움", stock_price=None):
     if stock_code == None:
         return
     
-    if stock_price and type(stock_price) != int:
+    if stock_price and stock_price.isdigit():
         await ctx.send('숫자를 입력해주세요')
         return
     
