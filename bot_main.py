@@ -12,10 +12,9 @@ import json
 from res.Class import stock
 from res.Class.embed_form import embed_factory as ef
 from res.Class import triggers
-
 from res.DB import db
-from res.DB import market_data
 
+from res.DB.market_data import login
 
 
 nest_asyncio.apply()
@@ -52,23 +51,27 @@ async def on_ready():
     
     print('실시간 데이터 시작')
     '''
-    market_data.login()
+    login()
     print('로그인 완료')
     if datetime.now().hour > 7 and datetime.now().hour < 15:
-        triggers.bot_action(bot).api_start
+        await triggers.bot_action(bot).api_start()
+        print('실시간 데이터 시작')
     else:
         await bot.get_channel(833299968987103242).send('실시간 데이터 시작 안함')
     
     sched = AsyncIOScheduler(timezone="Asia/Seoul")
     sched.add_job(triggers.bot_action(bot).api_start, 'cron', hour=7)
-    sched.add_job(triggers.bot_action(bot).api_stop, 'cron', hour=15)
+    # 봇 끄는거 확실히 완성하고 주석표시 지울 것
+    # sched.add_job(triggers.bot_action(bot).api_stop, 'cron', hour=15)
     sched.add_job(triggers.bot_action(bot).update_stock_info, 'cron', hour=4)
     
     sched.start()
     
     print('스케쥴러 시작')
-    
-    await bot.get_channel(833299968987103242).send('봇 시작')
+    if bot.user.name == 'StonkBot_test':
+        await bot.get_channel(833299968987103242).send('봇 켜짐')
+    elif bot.user.name == 'StonkBot':
+        await bot.get_channel(817874717921902703).send('봇 켜짐')
     
 #관리 코드
 @bot.command()
@@ -76,7 +79,12 @@ async def 킬(ctx):
     if ctx.author.id not in [378887088524886016, 731836288147259432, 797492145980047361]:
         await ctx.send("권한없음")
         return
-    await bot.get_channel(833299968987103242).send('봇 꺼짐')
+    
+    if bot.user.name == 'StonkBot_test':
+        await bot.get_channel(833299968987103242).send('봇 꺼짐')
+    elif bot.user.name == 'StonkBot':
+        await bot.get_channel(817874717921902703).send('봇 꺼짐')
+        
     await bot.close()
     
 @bot.command()
@@ -87,17 +95,14 @@ async def 관리(ctx, action_type=None):
     
     # 실시간 시작
     if action_type == '시작':
-        print('hello')
-        triggers.bot_action(bot).api_start()
-        await bot.get_channel(833299968987103242).send('실시간 시작')
-    # 실시간 끝
+        await triggers.bot_action(bot).api_start()
+    # 실시간 끝, 하지 말것
     elif action_type == '끝':
-        triggers.bot_action(bot).api_start()
-        await bot.get_channel(833299968987103242).send('실시간 끝')
+        pass
+        #await triggers.bot_action(bot).api_stop()
     # 주식목록 업데이트
     elif action_type == '업데이트':
-        triggers.bot_action(bot).update_stock_info()
-        await bot.get_channel(833299968987103242).send('주식목록 업데이트')
+        await triggers.bot_action(bot).update_stock_info()
         
 
 @bot.command()
