@@ -269,7 +269,7 @@ class XAQuery:
     # 조회 TR 요청
     def request(self, is_next = 0):
         result = self.com_obj.Request(is_next)
-        # self.com_obj.Request(is_next)
+        self.receive_state = 0
         while self.receive_state == 0:
             pythoncom.PumpWaitingMessages()
         state = None

@@ -9,7 +9,8 @@ from sqlalchemy import text as sql_text
 from sqlalchemy import and_
 from sqlalchemy.sql import select
 from sqlalchemy.orm import sessionmaker
-
+import time
+import datetime
 import pymysql
 import pandas
 import json
@@ -254,6 +255,128 @@ class StockInfoTable(Table):
         df = pandas.DataFrame(data, columns=["code", "name", "market", "ETF"])
         return df
 
+    def _stock_alert(self):
+        """
+        관리/불성실/투자유의 조회
+
+        Returns:
+            pandas dataframe object
+
+            code    type
+        0    000220    투자경고
+        1    000225    투자경고
+        2    002025    투자경고
+        3    003530    투자경고
+        """
+        mapping = {
+            '1': '관리',
+            '2': '불성실공시',
+            '3': '투자유의',
+            '4': '투자환기'
+        }
+        shcode = []
+        alert_type = []
+        today = datetime.datetime.today()
+        day = datetime.timedelta(days=1)
+        for chk in range(1, 5):
+            chk = str(chk)
+            query = XAQuery()
+            cts_shcode = ''
+            is_next = 0
+            in_field = {"gubun": '0', "jongchk": chk}
+            query.set_inblock('t1404', in_field)
+            while True:
+                query.com_obj.SetFieldData('t1404InBlock', 'cts_shcode', 0, cts_shcode)
+                query.request(is_next=is_next)
+                cts_shcode = query.get_outblock('t1404OutBlock', 'cts_shcode', 0)['cts_shcode']
+                out_count = query.get_count('t1404OutBlock1')
+                for i in range(out_count):
+                    s_date = query.get_outblock('t1404OutBlock1', "date", i)["date"]
+                    s_date = datetime.datetime.strptime(s_date, '%Y%m%d')
+                    e_date = query.get_outblock('t1404OutBlock1', "edate", i)["edate"]
+                    if e_date == '':
+                        e_date = '40001231'
+                    e_date = datetime.datetime.strptime(e_date, '%Y%m%d') + day
+                    if s_date <= today < e_date:
+                        shcode.append(query.get_outblock('t1404OutBlock1', "shcode", i)["shcode"])
+                        alert_type.append(mapping[chk])
+                    else:
+                        continue
+                if cts_shcode == '':
+                    break
+                else:
+                    is_next = 1
+            time.sleep(3)
+        data = {
+            "code": shcode,
+            "type": alert_type
+        }
+        df = pandas.DataFrame(data, columns=["code", "type"])
+        return df
+
+    def _stock_danger(self):
+        """
+        투자경고/매매정지/정리매매조회
+
+        Returns:
+            pandas dataframe object
+
+             code    type
+        0    000220    투자경고
+        1    000225    투자경고
+        2    002025    투자경고
+        3    003530    투자경고
+        """
+        mapping = {
+            '1': '투자경고',
+            '2': '매매정지',
+            '3': '정리매매',
+            '4': '투자주의',
+            '5': '투자위험',
+            '6': '위험예고',
+            '7': '단기과열지정',
+            '8': '상장주식수 부족'
+        }
+        shcode = []
+        alert_type = []
+        today = datetime.datetime.today()
+        day = datetime.timedelta(days=1)
+        for chk in range(1, 9):
+            chk = str(chk)
+            query = XAQuery()
+            cts_shcode = ''
+            is_next = 0
+            in_field = {"gubun": '0', "jongchk": chk}
+            query.set_inblock('t1405', in_field)
+            while True:
+                query.com_obj.SetFieldData('t1405InBlock', 'cts_shcode', 0, cts_shcode)
+                query.request(is_next=is_next)
+                cts_shcode = query.get_outblock('t1405OutBlock', 'cts_shcode', 0)['cts_shcode']
+                out_count = query.get_count('t1405OutBlock1')
+                for i in range(out_count):
+                    s_date = query.get_outblock('t1405OutBlock1', "date", i)["date"]
+                    s_date = datetime.datetime.strptime(s_date, '%Y%m%d')
+                    e_date = query.get_outblock('t1405OutBlock1', "edate", i)["edate"]
+                    if e_date == '':
+                        e_date = '40001231'
+                    e_date = datetime.datetime.strptime(e_date, '%Y%m%d') + day
+                    if s_date <= today < e_date:
+                        shcode.append(query.get_outblock('t1405OutBlock1', "shcode", i)["shcode"])
+                        alert_type.append(mapping[chk])
+                    else:
+                        continue
+                if cts_shcode == '':
+                    break
+                else:
+                    is_next = 1
+            time.sleep(3)
+        data = {
+            "code": shcode,
+            "type": alert_type
+        }
+        df = pandas.DataFrame(data, columns=["code", "type"])
+        return df
+
     # 종목정보 업데이트
     # 일단 3월 28일자 기준 파일 사용, 자동화 필요
     # └-> 2021.04.10 api 로 대체함
@@ -280,8 +403,22 @@ class StockInfoTable(Table):
                        """)
         self.connection.execute(sql)
 
-        # api 사용하여 종목정보 read
-        df = self._stock_name()
+        # api 사용하여 종목이름, 종목코드 read
+        df_name = self._stock_name()
+
+        # 투자유의/관리 정보 read
+        df_alert = self._stock_alert()
+        df_danger = self._stock_danger()
+        df_alertdanger = pandas.concat([df_alert, df_danger])
+        df_alertdanger['type'] = df_alertdanger['type'].astype('category')
+
+        custom_order = ['매매정지', '정리매매', '투자경고', '투자위험', '위험예고', '단기과열지정', '단기과열지정예고', '관리', '불성실공시', '투자유의', '투자환기', '상장주식수 부족']
+        df_alertdanger['type'] = df_alertdanger['type'].cat.set_categories(custom_order, ordered=True)
+        df_alertdanger.sort_values(by=['type'], inplace=True)
+        df_alertdanger = df_alertdanger.drop_duplicates(['code'], keep = 'first')
+
+        # 병합후 데이터베이스에 저장
+        df = pandas.merge(df_name, df_alertdanger, on='code', how='left')
         df.to_sql(name='stock_code', con=self.connection, if_exists='replace', index=False, method='multi')
         print("저장완료")
 
@@ -294,7 +431,8 @@ class StockInfoTable(Table):
                            `code` varchar(15) PRIMARY KEY,
                            `name` varchar(15),
                            `market` varchar(15),
-                           `ETF` varchar(5)
+                           `ETF` varchar(5),
+                           `type` varchar(10)
                            );
                        """)
         
@@ -314,7 +452,7 @@ class StockInfoTable(Table):
     
         #실행
         sql = sql_text("""
-                       SELECT code, name, market, ETF
+                       SELECT code, name, market, ETF, `type`
                        FROM `stock_code`
                        WHERE name LIKE :stock_name
                        ORDER BY name ASC
@@ -331,7 +469,7 @@ class StockInfoTable(Table):
         
         #실행
         sql = sql_text("""
-                       SELECT code, name, market, ETF
+                       SELECT code, name, market, ETF, `type`
                        FROM `stock_code`
                        WHERE code = :stock_code
                        """)
@@ -777,8 +915,10 @@ class KRXIndexData(Table):
 
 #main 함수
 def main():
-    #import market_data
-    #market_data.login()
+    import market_data
+    market_data.login()
+    a = StockInfoTable()
+    a.update_table()
     #KRXIndexData().update()
     #a = KRXIndexData()
     #a.create_table()
