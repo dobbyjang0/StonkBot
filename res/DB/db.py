@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from .xing_api import XASession
 from .xing_api import XAQuery
 from .xing_api import XAReal
