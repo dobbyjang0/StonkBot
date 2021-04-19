@@ -218,7 +218,7 @@ class StockInfoTable(Table):
         Returns:
             pandas dataframe object
 
-                   code            name    market   ETF
+                   code            name    market   ETF    uplimit    downlimit    beforeclose
             0     000020          동화약품   KOSPI   주식
             1     000040         KR모터스   KOSPI   주식
             2     000050            경방   KOSPI   주식
@@ -230,6 +230,9 @@ class StockInfoTable(Table):
                 name: 종목명
                 market: 시장구분
                 ETF: ETF 구분
+                uplimit: 상한가
+                downlimit: 하한가
+                beforeclose: 전일종가
         """
         query = XAQuery()
         in_field = {"gubun": '0'}
@@ -243,15 +246,21 @@ class StockInfoTable(Table):
                  range(out_count)]
         etfgubun = ["주식" if query.get_outblock('t8430OutBlock', "etfgubun", i)["etfgubun"] == '0' else "ETF" for i in
                     range(out_count)]
+        uplmtprice = [query.get_outblock('t8430OutBlock', "uplmtprice", i)["uplmtprice"] for i in range(out_count)]
+        dnlmtprice = [query.get_outblock('t8430OutBlock', "dnlmtprice", i)["dnlmtprice"] for i in range(out_count)]
+        jnilclose = [query.get_outblock('t8430OutBlock', "jnilclose", i)["jnilclose"] for i in range(out_count)]
 
         data = {
             "code": shcode,
             "name": hname,
             "market": gubun,
-            "ETF": etfgubun
+            "ETF": etfgubun,
+            "uplimit": uplmtprice,
+            "downlimit": dnlmtprice,
+            "beforeclose": jnilclose
         }
 
-        df = pandas.DataFrame(data, columns=["code", "name", "market", "ETF"])
+        df = pandas.DataFrame(data, columns=["code", "name", "market", "ETF", "uplimit", "downlimit", "beforeclose"])
         return df
 
     def _stock_alert(self):
@@ -291,7 +300,10 @@ class StockInfoTable(Table):
                 out_count = query.get_count('t1404OutBlock1')
                 for i in range(out_count):
                     s_date = query.get_outblock('t1404OutBlock1', "date", i)["date"]
-                    s_date = datetime.datetime.strptime(s_date, '%Y%m%d')
+                    if s_date == '':
+                        s_date = today
+                    else:
+                        s_date = datetime.datetime.strptime(s_date, '%Y%m%d')
                     e_date = query.get_outblock('t1404OutBlock1', "edate", i)["edate"]
                     if e_date == '':
                         e_date = '40001231'
@@ -354,7 +366,10 @@ class StockInfoTable(Table):
                 out_count = query.get_count('t1405OutBlock1')
                 for i in range(out_count):
                     s_date = query.get_outblock('t1405OutBlock1', "date", i)["date"]
-                    s_date = datetime.datetime.strptime(s_date, '%Y%m%d')
+                    if s_date == '':
+                        s_date = today
+                    else:
+                        s_date = datetime.datetime.strptime(s_date, '%Y%m%d')
                     e_date = query.get_outblock('t1405OutBlock1', "edate", i)["edate"]
                     if e_date == '':
                         e_date = '40001231'
@@ -431,6 +446,9 @@ class StockInfoTable(Table):
                            `name` varchar(15),
                            `market` varchar(15),
                            `ETF` varchar(5),
+                           `uplimit` int,
+                           `downlimit` int,
+                           `beforeclose` int,
                            `type` varchar(10)
                            );
                        """)
@@ -451,7 +469,7 @@ class StockInfoTable(Table):
     
         #실행
         sql = sql_text("""
-                       SELECT code, name, market, ETF, `type`
+                       SELECT code, name, market, ETF, `uplimit`, `downlimit`, `beforeclose`, `type`
                        FROM `stock_code`
                        WHERE name LIKE :stock_name
                        ORDER BY name ASC
@@ -468,7 +486,7 @@ class StockInfoTable(Table):
         
         #실행
         sql = sql_text("""
-                       SELECT code, name, market, ETF, `type`
+                       SELECT code, name, market, ETF, `uplimit`, `downlimit`, `beforeclose`, `type`
                        FROM `stock_code`
                        WHERE code = :stock_code
                        """)
@@ -917,6 +935,7 @@ def main():
     import market_data
     market_data.login()
     a = StockInfoTable()
+    a.create_table()
     a.update_table()
     #KRXIndexData().update()
     #a = KRXIndexData()
