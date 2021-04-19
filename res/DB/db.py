@@ -892,7 +892,7 @@ class KRXIndexData(Table):
 
     def update(self, context):
         sql = sql_text("""
-                       INSERT INTO krx_real_data VALUES(:upcode, :time, :sign, :change, :drate, :jisu, :openjisu, :highjisu, :lowjisu, :upjo, :downjo, :upjrate, :frgsvalue, :orgsvalue)
+                       INSERT INTO krx_index_data VALUES(:upcode, :time, :sign, :change, :drate, :jisu, :openjisu, :highjisu, :lowjisu, :upjo, :downjo, :upjrate, :frgsvalue, :orgsvalue)
                        ON DUPLICATE KEY UPDATE 
                            `time` = :time,
                            `sign` = :sign,
