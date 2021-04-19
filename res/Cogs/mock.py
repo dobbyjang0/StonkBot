@@ -20,7 +20,7 @@ class mock_trans(commands.Cog):
 
         serch_stock = self.bot.get_cog('serch_stock')
         
-        stock_code, stock_name, *__ = await serch_stock.serch_stock_by_bot(ctx, stock_name)
+        stock_code, stock_name, __, __, alert_info = await serch_stock.serch_stock_by_bot(ctx, stock_name)
         
    
         if stock_code is None:
@@ -29,7 +29,7 @@ class mock_trans(commands.Cog):
         
         stock_price = db.KRXRealData().read_price(stock_code)
         
-        if stock_price is None:
+        if stock_price is None or alert_info == '매매정지':
             await ctx.send("거래 정지 종목입니다.")
             return
     
@@ -103,7 +103,7 @@ class mock_trans(commands.Cog):
             return
         
         serch_stock = self.bot.get_cog('serch_stock')
-        stock_code, stock_name, *__ = await serch_stock.serch_stock_by_bot(ctx, stock_name)
+        stock_code, stock_name, __, __, alert_info = await serch_stock.serch_stock_by_bot(ctx, stock_name)
 
         if stock_code is None:
             await ctx.send("올바르지 않는 주식명")
@@ -111,7 +111,7 @@ class mock_trans(commands.Cog):
 
         stock_price = db.KRXRealData().read_price(stock_code)
 
-        if stock_price is None:
+        if stock_price is None or alert_info == '매매정지':
             await ctx.send("거래 정지 종목입니다.")
             return
     
