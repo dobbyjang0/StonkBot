@@ -61,6 +61,7 @@ class bot_action(metaclass=MetaSingleton):
     '''
     
     async def update_stock_info(self):
+        db.StockInfoTable().create_table()
         db.StockInfoTable().update_table()
         
         await self.channel.send('주식테이블 업데이트 완료')

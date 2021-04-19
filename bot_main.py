@@ -177,7 +177,7 @@ async def 주식(ctx, stock_name="도움", chart_type='일'):
     
     #주식 검색
     serch_stock = bot.get_cog('serch_stock')
-    stock_code, stock_real_name, stock_market, is_ETF = await serch_stock.serch_stock_by_bot(ctx, stock_name)
+    stock_code, stock_real_name, stock_market, is_ETF, alert_info = await serch_stock.serch_stock_by_bot(ctx, stock_name)
     
     if stock_code is None:
         return
@@ -207,7 +207,7 @@ async def 계산(ctx, stock_name="도움", stock_count=1):
     
     #주식 검색
     serch_stock = bot.get_cog('serch_stock')
-    stock_code, stock_real_name, __, __ = await serch_stock.serch_stock_by_bot(ctx, stock_name)
+    stock_code, stock_real_name, *__= await serch_stock.serch_stock_by_bot(ctx, stock_name)
     
     if stock_code is None:
         await ctx.send('주식명 오류?')
@@ -233,7 +233,7 @@ async def 매매동향(ctx, stock_name='도움', input_type=None, chart_type="�
     
     #주식 
     serch_stock = bot.get_cog('serch_stock')
-    stock_code, stock_real_name, __, __ = await serch_stock.serch_stock_by_bot(ctx, stock_name)
+    stock_code, stock_real_name, *__ = await serch_stock.serch_stock_by_bot(ctx, stock_name)
     
     if stock_code == None:
         return
@@ -251,7 +251,7 @@ async def 가즈아(ctx, stock_name="도움", stock_price=None):
     
     #주식 검색
     serch_stock = bot.get_cog('serch_stock')
-    stock_code, stock_real_name, __, __ = await serch_stock.serch_stock_by_bot(ctx, stock_name)
+    stock_code, stock_real_name, *__ = await serch_stock.serch_stock_by_bot(ctx, stock_name)
     
     if stock_code == None:
         return
