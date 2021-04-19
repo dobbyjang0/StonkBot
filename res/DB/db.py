@@ -576,8 +576,29 @@ class AccountTable(Table):
         df = pandas.read_sql_query(sql = sql, con = self.connection, params={"author_id": author_id})
         return df
     
-    def read_rank(self, stock_code = 'KRW'):
-        pass
+    def read_rank_all(self):
+        sql = sql_text("""
+                       SELECT author_id, MAX(sum_value) AS all_value
+                       FROM `account`
+                       GROUP BY author_id
+                       ORDER BY all_value DESC
+                       LIMIT 10;
+                       """)
+                       
+        df = pandas.read_sql_query(sql = sql, con = self.connection)
+        return df
+        
+    def read_rank_by_code(self, stock_code):
+        sql = sql_text("""
+                       SELECT author_id, balance, sum_value
+                       FROM `account`
+                       WHERE stock_code = :stock_code
+                       ORDER BY balance DESC
+                       LIMIT 10;
+                       """)
+                       
+        df = pandas.read_sql_query(sql = sql, con = self.connection, params={"stock_code": stock_code})
+        return df
 
     # 계좌 자산 업데이트(유저, 자산종류, 수량)
     # balance는 가상화폐일경우 소수점 8자리까지, KRW나 현물 주식일 경우 정수로 입력
