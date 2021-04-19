@@ -14,13 +14,13 @@ class mock_trans(commands.Cog):
         if stock_name is None:
             await ctx.send("거래할 주식을 입력해주세요.")
             return
-        if not (stock_count.isdigit() or stock_count in ['최대', '풀', '반'] or stock_count[-1] in ['%', '퍼', '원']):
+        if not (stock_count.isdigit() or stock_count in ['최대', '풀', '올인','반'] or stock_count[-1] in ['%', '퍼', '원']):
             await ctx.send("수량에 숫자를 입력해주세요.")
             return
 
         serch_stock = self.bot.get_cog('serch_stock')
         
-        stock_code, stock_name, __, __ = await serch_stock.serch_stock_by_bot(ctx, stock_name)
+        stock_code, stock_name, *__ = await serch_stock.serch_stock_by_bot(ctx, stock_name)
         
    
         if stock_code is None:
@@ -44,7 +44,7 @@ class mock_trans(commands.Cog):
         # stock_count 계산
         if stock_count.isdigit():
             stock_count = int(stock_count)
-        elif stock_count in ['최대', '풀']:
+        elif stock_count in ['최대', '풀', '올인']:
             stock_count = krw_money//stock_price
         elif stock_count in ['반']:
             stock_count = krw_money//2//stock_price
@@ -98,12 +98,12 @@ class mock_trans(commands.Cog):
         if stock_name is None:
             await ctx.send("거래할 주식을 입력해주세요.")
             return
-        if not (stock_count.isdigit() or stock_count in ['최대', '풀', '반'] or stock_count[-1] in ['%', '퍼', '원']):
+        if not (stock_count.isdigit() or stock_count in ['최대', '풀', '올인', '반'] or stock_count[-1] in ['%', '퍼', '원']):
             await ctx.send("수량에 숫자를 입력해주세요.")
             return
         
         serch_stock = self.bot.get_cog('serch_stock')
-        stock_code, stock_name, __, __ = await serch_stock.serch_stock_by_bot(ctx, stock_name)
+        stock_code, stock_name, *__ = await serch_stock.serch_stock_by_bot(ctx, stock_name)
 
         if stock_code is None:
             await ctx.send("올바르지 않는 주식명")
@@ -126,7 +126,7 @@ class mock_trans(commands.Cog):
         # stock_count 계산
         if stock_count.isdigit():
             stock_count = int(stock_count)
-        elif stock_count in ['최대', '풀']:
+        elif stock_count in ['최대', '풀', '올인']:
             stock_count = balance
         elif stock_count in ['반']:
             stock_count = balance//2

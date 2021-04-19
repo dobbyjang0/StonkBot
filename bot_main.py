@@ -51,6 +51,7 @@ async def on_ready():
     
     print('실시간 데이터 시작')
     '''
+    
     login()
     print('로그인 완료')
     if datetime.now().hour > 7 and datetime.now().hour < 15:
@@ -71,7 +72,7 @@ async def on_ready():
     if bot.user.name == 'StonkBot_test':
         await bot.get_channel(833299968987103242).send('봇 켜짐')
     elif bot.user.name == 'StonkBot':
-        await bot.get_channel(817874717921902703).send('봇 켜짐')
+        await bot.get_channel(833299968987103242).send('봇 켜짐')
     
 #관리 코드
 @bot.command()
@@ -83,7 +84,7 @@ async def 킬(ctx):
     if bot.user.name == 'StonkBot_test':
         await bot.get_channel(833299968987103242).send('봇 꺼짐')
     elif bot.user.name == 'StonkBot':
-        await bot.get_channel(817874717921902703).send('봇 꺼짐')
+        await bot.get_channel(833299968987103242).send('봇 꺼짐')
         
     await bot.close()
     
@@ -107,10 +108,13 @@ async def 관리(ctx, action_type=None):
 
 @bot.command()
 async def 테스트(ctx):
-    if ctx.author.id not in [378887088524886016, 731836288147259432]:
+    if ctx.author.id not in [378887088524886016, 731836288147259432, 797492145980047361]:
         await ctx.send("권한없음")
         return
-    await ctx.send(embed=ef("testembed").get)
+    await ctx.send(ctx.author)
+    await ctx.send(ctx.author.id)
+    await ctx.send(bot.get_user(ctx.author.id))
+    #await ctx.send(embed=ef("testembed").get)
 
 @bot.command(aliases=['도움'])
 async def help_all(ctx, help_input=None):
@@ -177,7 +181,7 @@ async def 주식(ctx, stock_name="도움", chart_type='일'):
     
     #주식 검색
     serch_stock = bot.get_cog('serch_stock')
-    stock_code, stock_real_name, stock_market, is_ETF = await serch_stock.serch_stock_by_bot(ctx, stock_name)
+    stock_code, stock_real_name, stock_market, is_ETF, alert_info = await serch_stock.serch_stock_by_bot(ctx, stock_name)
     
     if stock_code is None:
         return
@@ -190,7 +194,7 @@ async def 주식(ctx, stock_name="도움", chart_type='일'):
                       'price' : result[5], 'start_price' : result[6],
                       'high_price' : result[7], 'low_price' : result[8],
                       'volume' : result[9], 'transaction_price' : result[10],
-                      'chart_type' : chart_type}
+                      'chart_type' : chart_type, 'alert_info' : alert_info}
     #이름, 시장구분, 코드, 전일대비구분, 전일대비, 등락율, 현재가, 시가, 조가, 저가, 누적거래량, 누적거래대금, 차트타입
 
     await ctx.send(embed=ef("serch_result2",**input_variable).get)
@@ -207,7 +211,7 @@ async def 계산(ctx, stock_name="도움", stock_count=1):
     
     #주식 검색
     serch_stock = bot.get_cog('serch_stock')
-    stock_code, stock_real_name, __, __ = await serch_stock.serch_stock_by_bot(ctx, stock_name)
+    stock_code, stock_real_name, *__= await serch_stock.serch_stock_by_bot(ctx, stock_name)
     
     if stock_code is None:
         await ctx.send('주식명 오류?')
@@ -233,7 +237,7 @@ async def 매매동향(ctx, stock_name='도움', input_type=None, chart_type="�
     
     #주식 
     serch_stock = bot.get_cog('serch_stock')
-    stock_code, stock_real_name, __, __ = await serch_stock.serch_stock_by_bot(ctx, stock_name)
+    stock_code, stock_real_name, *__ = await serch_stock.serch_stock_by_bot(ctx, stock_name)
     
     if stock_code == None:
         return
@@ -251,7 +255,7 @@ async def 가즈아(ctx, stock_name="도움", stock_price=None):
     
     #주식 검색
     serch_stock = bot.get_cog('serch_stock')
-    stock_code, stock_real_name, __, __ = await serch_stock.serch_stock_by_bot(ctx, stock_name)
+    stock_code, stock_real_name, *__ = await serch_stock.serch_stock_by_bot(ctx, stock_name)
     
     if stock_code == None:
         return
@@ -336,7 +340,33 @@ async def mock_have(ctx, stock_name=None, stock_count=1):
     
     await ctx.send(embed=ef("mock_have", ctx.author, fund_list).get)
 
-            
+#순위 관련 기능
+@bot.command()
+async def 순위(ctx, stock_name = 'all'):
+    if stock_name == 'all':
+        df = db.AccountTable().read_rank_all()
+        stock_name = '전체 보유 주식(매수기준)' 
+    elif stock_name == ['돈', '한화', 'KRW', '원', '현금']:
+        df = db.AccountTable().read_rank_by_code('KRW')
+        stock_name = '원화'
+    else:
+        serch_stock = bot.get_cog('serch_stock')
+        stock_code, stock_name, *__ = await serch_stock.serch_stock_by_bot(ctx, stock_name)
+        df = db.AccountTable().read_rank_by_code(stock_code)
+        
+        if stock_code is None:
+            await ctx.send("올바르지 않는 주식명")
+            return
+    await ctx.send(df)
+    
+    def get_user_name(user_id):
+        return bot.get_user(user_id).name
+    
+    df['author_id'] = df['author_id'].map(get_user_name)
+    await ctx.send(df)
+    await ctx.send(embed=ef("ranking", stock_name, df).get)
+        
+
 def main():
     if __name__ == "__main__":
         #봇 실행

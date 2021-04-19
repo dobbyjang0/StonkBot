@@ -22,8 +22,8 @@ class formbase:
     def get(self):
         return self.embed
         
-# 처음에 안바뀌는건 init_make, 처음에 값을 넣어줘야 되는건 insert에서 해줘야함
-# 더 좋은 구조 있으면 추천받음
+#싱글톤 봇 (아직 고민중, 시작하기전에 bot_main에서 불러올 것)
+
 
 #이모지 변형
 def set_market_to_emoji(market):
@@ -54,6 +54,22 @@ def rate_plus_sign(rate):
     else:
         return ''
 
+def alert_info_to_emoji(alert_info):
+    if not alert_info:
+        return None
+    alert_emoji ={"투자경고":"⚠️",
+                   "매매정지":"⛔",
+                   '단기과열지정':'🔥',
+                   '관리':'🔧'
+        }
+    
+    output = alert_emoji.get(alert_info)
+    
+    if not output:
+        output = f'‼️{alert_info}'
+        
+    return output
+        
 def make_arrow_sign(number):
     if number > 0:
         sign = compared_sign_to_emoji(2)
@@ -82,7 +98,7 @@ class serch_result(formbase):
 
 #신식 이베스트 
 class serch_result2(formbase):
-    def insert(self, name, code, compared_sign, compared_price, rate, price, start_price, high_price, low_price, volume, transaction_price, chart_type, stock_market = None, *arg, **kwarg):
+    def insert(self, name, code, compared_sign, compared_price, rate, price, start_price, high_price, low_price, volume, transaction_price, chart_type, alert_info, stock_market = None, *arg, **kwarg):
         
         IMG_URL_BASE = "https://ssl.pstatic.net/imgfinance/chart/item/%s/%s.png?sidcode=%d"
         MAIN_URL_BASE = "https://finance.naver.com/item/main.nhn?code="
@@ -100,7 +116,7 @@ class serch_result2(formbase):
             
             return result
         
-        self.embed.title = name + ' ' + set_market_to_emoji(stock_market)
+        self.embed.title = f'{name} {set_market_to_emoji(stock_market)} {alert_info_to_emoji(alert_info)}'
         self.embed.url = MAIN_URL_BASE + code
         self.embed.description = f"현재가 : **{price}**\t{compared_sign_to_emoji(compared_sign)}{compared_price}\t{rate_plus_sign(rate)}{rate}%\n"
         self.embed.add_field(name="시가", value=start_price)
@@ -170,8 +186,6 @@ class mock_have(formbase):
             all_buy_price = pd.iat[idx,2]
             all_present_price = pd.iat[idx,4]
             
-            print([type(x) for x in [stock_name, stock_count, all_buy_price, all_present_price]])
-
             profit = all_present_price - all_buy_price
             profit_rate = round(profit/all_buy_price * 100, 2)
             
@@ -217,7 +231,7 @@ class gazua(formbase):
 class trading_trend(formbase):
     def init_make(self):
         self.embed.description = "🔵매도 🔴매수 🟣주가"
-    def insert(self, name, code, input_type, chart_type):
+    def insert(self, name, code, input_type, chart_type, *arg, **kwarg):
         IMG_URL_BASE = 'https://ssl.pstatic.net/imgfinance/chart/trader/%s/%s_%s.png'
         
         def chart_type_change(chart_type):
@@ -240,6 +254,11 @@ class trading_trend(formbase):
         url = IMG_URL_BASE % (chart_type_change(chart_type), input_type_change(input_type), code)
         self.embed.set_image(url=url)
 
+#순위, 랭킹 관련
+class ranking(formbase):
+    def ineset(self, stock_name, df, *arg, **kwarg):
+        
+        pass
 
 class testembed(formbase):
     def init_make(self):
