@@ -158,7 +158,7 @@ class serch_list(formbase):
     def init_make(self):
         self.embed.title = "검색하고자 하는 주식 번호를 입력해주세요"
     def insert(self, pd, *arg, **kwarg):
-        self.embed.description = "\n".join(f"{number_to_emoji(idx)} {pd.iat[idx, 1]} {set_market_to_emoji(pd.iat[idx, 2])}" for idx in range(len(pd))) 
+        self.embed.description = "\n".join(f"{number_to_emoji(idx)} {pd.iat[idx, 1]} {set_market_to_emoji(pd.iat[idx, 2])}" for idx in pd.index) 
         
 class calculate(formbase):
     def insert(self, stock_count, name, price, *arg, **kwarg):
@@ -282,10 +282,33 @@ class trading_trend(formbase):
         self.embed.set_image(url=url)
 
 #순위, 랭킹 관련
+#코드가 존나 못생겼다 시발, 나중에 바꾸기
 class ranking(formbase):
-    def ineset(self, stock_name, df, *arg, **kwarg):
+    def insert(self, stock_name, df, *arg, **kwarg):
+        self.embed.set_author(name=f'{stock_name} 순위')
         
-        pass
+        print(df)
+        if df.empty:
+            self.embed.title = '✨ 해당 주식을 가진 사람이 아직 없습니다!'
+            self.embed.description = '📈 이 주식의 첫 주주가 되어보는 것은 어떤가요?'
+            return
+        
+        description_list =[]  
+        columns_count = len(df.columns)
+        for idx in df.index:
+            if columns_count == 3 and stock_name != '원화':
+                balance_description = f'`{int(df.iat[idx, 2])}주`'
+            else:
+                balance_description = ''
+                
+            if idx==0:
+                title = f'👑　**{df.iat[0, 0]}** : `{int(df.iat[0, 1])}원` {balance_description}'
+            else:
+                description_list.append(f'{number_to_emoji(idx+1)}　**{df.iat[idx, 0]}** : `{int(df.iat[idx, 1])}원` {balance_description}')
+    
+        self.embed.title = title
+        self.embed.description = "\n".join(x for x in description_list)
+        
 
 class testembed(formbase):
     def init_make(self):
@@ -300,9 +323,10 @@ class help_all(formbase):
         
         description_list = ['`주식` : -주식 `<주식 이름/코드>` `<차트 형태>`',
                             '`계산` : -계산 `<주식 이름/코드>` `<주식 갯수>`',
-                            '`모의` : `지원금` `매수` `매도` `보유` `도움`',
+                            '`모의` : `지원금` `매수` `매도` `보유` `도움` `순위`',
                             '`가즈아` : -가즈아 `<주식 이름/코드>` `<예상하는 가격>`',
                             '`매매동향` : -매매동향 `<주식 이름/코드>` `<외국인/기관>` `<차트 형태>`',
+                            '`지수` : -지수 `<지수 이름>` `<차트 형태>`',
                             '`코스피` `코스닥`',
                             '-도움 `<명령어>`로 더 상세한 설명을 볼 수 있습니다.'
                              ]
@@ -370,6 +394,15 @@ class help_index(formbase):
                             '`<차트 형태>` : 일, 월, 년, 3년, 10년, 일봉, 주봉, 월봉'
                              ]
         self.embed.description = "\n".join(x for x in description_list)
+        
+class help_ranking(formbase):
+    def init_make(self):
+        IMG_URL = 'https://media.discordapp.net/attachments/813006733881376778/814116320123551744/1.png?width=672&height=676'
+        self.embed.set_author(name='순위 관련 설명', icon_url = IMG_URL)
+        self.embed.title = '-순위 `<순위 대상>`'
+        self.embed.description = '`<순위 대상>` : 전체, 돈, 주식 이름'
+
+
 
 if __name__ == "__main__":
     print(embed_factory("gazua",3).embed.title)

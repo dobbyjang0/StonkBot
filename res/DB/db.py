@@ -590,7 +590,7 @@ class AccountTable(Table):
         
     def read_rank_by_code(self, stock_code):
         sql = sql_text("""
-                       SELECT author_id, balance, sum_value
+                       SELECT author_id, sum_value, balance
                        FROM `account`
                        WHERE stock_code = :stock_code
                        ORDER BY balance DESC
@@ -794,7 +794,7 @@ class MockTransection(Transection):
                        
         sql_update = sql_text("""
                        UPDATE `account`
-                       SET balance = balance - (:balance), sum_value = sum_value - (:stock_value)
+                       SET balance = balance - (:stock_value), sum_value = sum_value - (:stock_value)
                        WHERE author_id = :author_id and stock_code = 'KRW';
                        """)
          
@@ -823,7 +823,7 @@ class MockTransection(Transection):
                        
         sql_update_2 = sql_text("""
                        UPDATE `account`
-                       SET balance = balance + (:balance), sum_value = sum_value + (:stock_value)
+                       SET balance = balance + (:stock_value), sum_value = sum_value + (:stock_value)
                        WHERE author_id = :author_id and stock_code = 'KRW';
                        """)
         

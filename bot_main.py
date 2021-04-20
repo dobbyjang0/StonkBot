@@ -19,7 +19,9 @@ from res.DB.market_data import login
 
 nest_asyncio.apply()
 
-bot = commands.Bot(command_prefix="-")
+intents = discord.Intents.default()
+intents.members = True
+bot = commands.Bot(command_prefix="-", intents=intents)
 
 extensions = [
     "res.Cogs.bot_function",
@@ -121,7 +123,7 @@ async def help_all(ctx, help_input=None):
     help_type_dic = {None:'help_all', '주식':'help_serch', '검색':'help_serch',
                      '모의':'help_mock', '코스피':'help_kos', '코스닥':'help_kos',
                      '가즈아':'help_gazua', '계산':'help_calculate', '매매동향':'help_trend'
-                     ,'지수':'help_index'}
+                     ,'지수':'help_index', '순위':'help_ranking'}
     
     help_type = help_type_dic.get(help_input)
     if not help_type:
@@ -333,10 +335,10 @@ async def mock_have(ctx, stock_name=None, stock_count=1):
 #순위 관련 기능
 @bot.command()
 async def 순위(ctx, stock_name = 'all'):
-    if stock_name == 'all':
+    if stock_name in ['all', '전체', '자산']:
         df = db.AccountTable().read_rank_all()
-        stock_name = '전체 보유 주식(매수기준)' 
-    elif stock_name == ['돈', '한화', 'KRW', '원', '현금']:
+        stock_name = '전체 자산 가치(매수기준)' 
+    elif stock_name in ['돈', '한화', 'KRW', '원', '현금']:
         df = db.AccountTable().read_rank_by_code('KRW')
         stock_name = '원화'
     else:
@@ -347,13 +349,12 @@ async def 순위(ctx, stock_name = 'all'):
         if stock_code is None:
             await ctx.send("올바르지 않는 주식명")
             return
-    await ctx.send(df)
     
     def get_user_name(user_id):
         return bot.get_user(user_id).name
     
     df['author_id'] = df['author_id'].map(get_user_name)
-    await ctx.send(df)
+
     await ctx.send(embed=ef("ranking", stock_name, df).get)
         
 
@@ -371,14 +372,14 @@ def main():
                 
         '''   
         bot_token.json 구조
-        {"real" : "봇토큰",
-         "test" : "봇토큰"}
+        {"r" : "봇토큰",
+         "t" : "봇토큰"}
         '''
         file_path = "./bot_token.json"
         with open(file_path, "r") as json_file:
             token_dic = json.load(json_file)
             
-        bot_token = token_dic.get(input("real/test 입력 : "))
+        bot_token = token_dic.get(input("r/t 입력 : "))
                     
         bot.run(bot_token)
 

@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Feb 24 21:51:51 2021
-
-@author: dobbyjang0
-"""
 import bs4
 import requests
 import time
