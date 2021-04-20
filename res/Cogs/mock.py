@@ -20,7 +20,7 @@ class mock_trans(commands.Cog):
 
         serch_stock = self.bot.get_cog('serch_stock')
         
-        stock_code, stock_name, __, __, alert_info = await serch_stock.serch_stock_by_bot(ctx, stock_name)
+        stock_code, stock_name, __, __, alert_info, *__ = await serch_stock.serch_stock_by_bot(ctx, stock_name)
         
    
         if stock_code is None:
@@ -103,7 +103,7 @@ class mock_trans(commands.Cog):
             return
         
         serch_stock = self.bot.get_cog('serch_stock')
-        stock_code, stock_name, __, __, alert_info = await serch_stock.serch_stock_by_bot(ctx, stock_name)
+        stock_code, stock_name, __, __, alert_info, *__ = await serch_stock.serch_stock_by_bot(ctx, stock_name)
 
         if stock_code is None:
             await ctx.send("올바르지 않는 주식명")

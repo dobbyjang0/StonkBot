@@ -433,10 +433,16 @@ class StockInfoTable(Table):
 
         # 병합후 데이터베이스에 저장
         df = pandas.merge(df_name, df_alertdanger, on='code', how='left')
-        df.to_sql(name='stock_code', con=self.connection, if_exists='replace', index=False, method='multi')
+        df.to_sql(name='stock_code', con=self.connection, if_exists='append', index=False, method='multi')
         print("저장완료")
 
     
+    def drop_table(self):
+        sql = sql_text("""
+                       DROP TABLE stock_code;
+                       """)
+        self.connection.execute(sql)
+
     # 최초 테이블 생성
     # 처음 테이블 만들 때 이것으로 만드는거 추천
     def create_table(self):

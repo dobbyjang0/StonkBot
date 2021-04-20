@@ -8,6 +8,7 @@ import asyncio
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import multiprocessing
 import json
+import sys
 
 from res.Class import parser
 from res.Class.embed_form import embed_factory as ef
@@ -35,28 +36,10 @@ async def on_ready():
     print("--- 연결 성공 ---")
     print(f"봇 이름: {bot.user.name}")
     print(f"ID: {bot.user.id}")
-    
-    """
-    실시간 시세, 뉴스 데이터 받는 부분
-    api 세팅 완료하면 이거 주석 해제하고 사용할것
-    사용전에 save_log_yesalchemy.KRXRealData 클래스의 create_table 꼭 실행할것
-    """
-    
-    '''
-    market_data.login()
-    process_kospi = multiprocessing.Process(target=market_data.kospi_tickdata)
-    process_kosdaq = multiprocessing.Process(target=market_data.kosdaq_tickdata)
-    process_index = multiprocessing.Process(target=market_data.index_tickdata)
-    process_kospi.start()
-    process_kosdaq.start()
-    process_index.start()
-    
-    print('실시간 데이터 시작')
-    '''
-    
+        
     login()
     print('로그인 완료')
-    if datetime.now().hour > 7 and datetime.now().hour < 15:
+    if datetime.now().hour > 7 and datetime.now().hour < 17:
         await triggers.bot_action(bot).api_start()
         print('실시간 데이터 시작')
     else:
@@ -162,7 +145,7 @@ async def 주식(ctx, stock_name="도움", chart_type='일'):
 
     #주식 검색
     serch_stock = bot.get_cog('serch_stock')
-    stock_code, stock_real_name, stock_market, is_ETF, alert_info = await serch_stock.serch_stock_by_bot(ctx, stock_name)
+    stock_code, stock_real_name, stock_market, is_ETF, alert_info, *__ = await serch_stock.serch_stock_by_bot(ctx, stock_name)
     
     if stock_code is None:
         return
@@ -361,6 +344,10 @@ async def 순위(ctx, stock_name = 'all'):
 def main():
     if __name__ == "__main__":
         #봇 실행
+        
+        if is_64bits := sys.maxsize > 2**32:
+            print('it_must be run on 32bit!')
+            return
         
         for extension in extensions:
             try:
