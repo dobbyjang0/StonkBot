@@ -9,7 +9,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import multiprocessing
 import json
 
-from res.Class import stock
+from res.Class import parser
 from res.Class.embed_form import embed_factory as ef
 from res.Class import triggers
 from res.DB import db
@@ -120,7 +120,8 @@ async def 테스트(ctx):
 async def help_all(ctx, help_input=None):
     help_type_dic = {None:'help_all', '주식':'help_serch', '검색':'help_serch',
                      '모의':'help_mock', '코스피':'help_kos', '코스닥':'help_kos',
-                     '가즈아':'help_gazua', '계산':'help_calculate', '매매동향':'help_trend'}
+                     '가즈아':'help_gazua', '계산':'help_calculate', '매매동향':'help_trend'
+                     ,'지수':'help_index'}
     
     help_type = help_type_dic.get(help_input)
     if not help_type:
@@ -128,27 +129,25 @@ async def help_all(ctx, help_input=None):
     
     await ctx.send(embed=ef(help_type).get)
 
-#코스피, 코스닥
-#로그 저장 추가하기
-@bot.command(aliases=["kospi", 'KOSPI'])
-async def 코스피(ctx, chart_type=None):
-    serching_index = stock.KOSInfo()
-    serching_index.get("KOSPI")
-    
-    if chart_type:
-        serching_index.change_graph_interval(chart_type)
-    
-    await ctx.send(embed=ef("serch_result",**serching_index.to_dict()).get)
-    
-@bot.command(aliases=["kosdaq", 'KOSDAQ'])
-async def 코스닥(ctx, chart_type=None):
-    serching_index = stock.KOSInfo()
-    serching_index.get("KOSDAQ")
-    
-    if chart_type:
-        serching_index.change_graph_interval(chart_type)
-    
-    await ctx.send(embed=ef("serch_result",**serching_index.to_dict()).get)
+
+@bot.command()
+async def 지수(ctx, index_name='도움', chart_type='일'):
+    if index_name == "도움":
+        await ctx.send(embed=ef('help_index').get)
+        return
+    elif index_name in ['코스피', 'kospi', '코스닥', 'kosdaq']:
+        await ctx.send('준비중')
+        return
+    else:
+        index_parser = parser.IndexInfo()
+        index_parser.get(index_name)
+        
+        if index_parser.name is None:
+            await ctx.send('결과 없음')
+            return
+        
+        await ctx.send(embed=ef("serch_result_world",**index_parser.to_dict(), chart_type=chart_type).get)
+
 
 # 주식 검색 기능
 @bot.command(aliases=['검색'])
@@ -158,27 +157,7 @@ async def 주식(ctx, stock_name="도움", chart_type='일'):
         return
     
     #나중에 코스피, 코스닥 함수로 빼기
-    elif stock_name == "코스피":
-        serching_index = stock.KOSInfo()
-        serching_index.get("KOSPI")
-    
-        if chart_type:
-            serching_index.change_graph_interval(chart_type)
-    
-        await ctx.send(embed=ef("serch_result",**serching_index.to_dict()).get)
-        return
-    
-    elif stock_name == '코스닥':
-        serching_index = stock.KOSInfo()
-        serching_index.get("KOSDAQ")
-    
-        if chart_type:
-            serching_index.change_graph_interval(chart_type)
-    
-        await ctx.send(embed=ef("serch_result",**serching_index.to_dict()).get)
-        return
-    
-    
+
     #주식 검색
     serch_stock = bot.get_cog('serch_stock')
     stock_code, stock_real_name, stock_market, is_ETF, alert_info = await serch_stock.serch_stock_by_bot(ctx, stock_name)
@@ -187,6 +166,17 @@ async def 주식(ctx, stock_name="도움", chart_type='일'):
         return
     
     result = db.KRXRealData().read(stock_code)
+    
+    if result is None:
+        stock_parser = parser.StockInfo()
+        price = stock_parser.get(stock_code).price
+        
+        input_variable = {'name' : stock_real_name, 'stock_market' : stock_market, 'code' : stock_code,
+                          'price' : price, 'chart_type' : chart_type, 'alert_info' : alert_info}
+
+        await ctx.send(embed=ef("serch_result2",**input_variable).get)
+        return
+    
     # 종목코드, 체결시간, 전일대비구분, 전일대비, 등락율, 현재가, 시가, 고가, 저가, 누적거래량, 누적거래대금
     input_variable = {'name' : stock_real_name, 'stock_market' : stock_market,
                       'code' : result[0], 'compared_sign' : result[2],

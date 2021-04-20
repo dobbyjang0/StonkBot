@@ -56,7 +56,7 @@ def rate_plus_sign(rate):
 
 def alert_info_to_emoji(alert_info):
     if not alert_info:
-        return None
+        return ''
     alert_emoji ={"투자경고":"⚠️",
                    "매매정지":"⛔",
                    '단기과열지정':'🔥',
@@ -98,7 +98,7 @@ class serch_result(formbase):
 
 #신식 이베스트 
 class serch_result2(formbase):
-    def insert(self, name, code, compared_sign, compared_price, rate, price, start_price, high_price, low_price, volume, transaction_price, chart_type, alert_info, stock_market = None, *arg, **kwarg):
+    def insert(self, name, code, compared_sign=0, compared_price=0, rate=0, price=0, start_price=0, high_price=0, low_price=0, volume=0, transaction_price=0, chart_type=None, alert_info=None, stock_market = None, *arg, **kwarg):
         
         IMG_URL_BASE = "https://ssl.pstatic.net/imgfinance/chart/item/%s/%s.png?sidcode=%d"
         MAIN_URL_BASE = "https://finance.naver.com/item/main.nhn?code="
@@ -118,15 +118,42 @@ class serch_result2(formbase):
         
         self.embed.title = f'{name} {set_market_to_emoji(stock_market)} {alert_info_to_emoji(alert_info)}'
         self.embed.url = MAIN_URL_BASE + code
-        self.embed.description = f"현재가 : **{price}**\t{compared_sign_to_emoji(compared_sign)}{compared_price}\t{rate_plus_sign(rate)}{rate}%\n"
+        
+        if alert_info != '매매정지':
+            self.embed.description = f'현재가 : **{price}**\t{compared_sign_to_emoji(compared_sign)}{compared_price}\t{rate_plus_sign(rate)}{rate}%\n'
+            self.embed.add_field(name="시가", value=start_price)
+            self.embed.add_field(name="고가", value=high_price)
+            self.embed.add_field(name="저가", value=low_price)
+            self.embed.add_field(name="거래량(천주)", value=volume)
+            self.embed.add_field(name="거래대금(백만)", value=transaction_price)
+        else:
+            self.embed.description = f'현재가 : **{price}**'
+        self.embed.set_image(url=IMG_URL_BASE % (chart_type_change(chart_type), code, int(time.time()*1000//1)))
+        
+class serch_result_world(formbase):
+    def insert(self, name, code, price, compared_sign, compared_price, rate, start_price, high_price, low_price, naver_url, chart_type, *arg, **kwarg):
+        
+        IMG_URL_BASE = 'https://ssl.pstatic.net/imgfinance/chart/mobile/world/%s/.%s_end.png?%s'
+        
+        def chart_type_change(chart_type):
+            chart_type_dic = {"일":"day", "월":"area/month3", "년":"area/year",
+                              "3년":"area/year3", "10년":"area/year10",
+                              "일봉":"candle/day", "주봉":"candle/week", "월봉":"candle/month"
+                              }
+            
+            result = chart_type_dic.get(chart_type)
+            if not result:
+                result = "day"
+            return result
+        
+        self.embed.title = f'**{name}** ({code})'
+        self.embed.url = naver_url
+        self.embed.description = f'현재가 : **{price}**\t{compared_sign_to_emoji(compared_sign)}{compared_price}\t{rate_plus_sign(rate)}{rate}%\n'
         self.embed.add_field(name="시가", value=start_price)
         self.embed.add_field(name="고가", value=high_price)
         self.embed.add_field(name="저가", value=low_price)
-        self.embed.add_field(name="거래량(천주)", value=volume)
-        self.embed.add_field(name="거래대금(백만)", value=transaction_price)
         self.embed.set_image(url=IMG_URL_BASE % (chart_type_change(chart_type), code, int(time.time()*1000//1)))
         
-
 class serch_list(formbase):
     def init_make(self):
         self.embed.title = "검색하고자 하는 주식 번호를 입력해주세요"
@@ -331,8 +358,18 @@ class help_trend(formbase):
     def init_make(self):
         IMG_URL = 'https://media.discordapp.net/attachments/813006733881376778/814116320123551744/1.png?width=672&height=676'
         self.embed.set_author(name='매매동향 관련 설명', icon_url = IMG_URL)
-        self.embed.title = '-매매동향 `<주식 이름/코드>` `<외국인/기관>` `<차트 형태>`)'
+        self.embed.title = '-매매동향 `<주식 이름/코드>` `<외국인/기관>` (`<차트 형태>`)'
         self.embed.description = '`<차트 형태>` : 월, 3월, 6월, 년'
+
+class help_index(formbase):
+    def init_make(self):
+        IMG_URL = 'https://media.discordapp.net/attachments/813006733881376778/814116320123551744/1.png?width=672&height=676'
+        self.embed.set_author(name='지수 관련 설명', icon_url = IMG_URL)
+        self.embed.title = '-지수 `<지수 이름>` (`<차트 형태>`)'
+        description_list = ['`<지수 이름>` : 코스피, 코스닥, 해외 지수 이름, 국가명',
+                            '`<차트 형태>` : 일, 월, 년, 3년, 10년, 일봉, 주봉, 월봉'
+                             ]
+        self.embed.description = "\n".join(x for x in description_list)
 
 if __name__ == "__main__":
     print(embed_factory("gazua",3).embed.title)

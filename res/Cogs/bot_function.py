@@ -3,8 +3,6 @@ from discord.ext import commands
 
 from ..DB import db
 from ..Class.embed_form import embed_factory as ef
-from ..Class import stock
-
 
 class serch_stock(commands.Cog):
     def __init__(self, bot):
@@ -83,36 +81,6 @@ class serch_stock(commands.Cog):
                 await list_msg.delete()
                 return stock_code, stock_real_name, stock_market, is_ETF, uplimit, downlimit, beforeclose, alert_info
             
-            
-    # 주식의 정보를 불러온다.
-    async def get_stock_info(self, ctx, stock_name):
-        #코드가 아닐시 검색해본다
-        if self.is_stock_code(stock_name):
-            stock_code = stock_name
-            stock_code, stock_real_name, stock_market, is_ETF, uplimit, downlimit, beforeclose, alert_info = db.StockInfoTable().read_stock_by_code(stock_code)
-        else:
-            stock_code, stock_real_name, stock_market, is_ETF, uplimit, downlimit, beforeclose, alert_info = await self.serch_stock_by_bot(ctx, stock_name)
-        
-        if stock_code == None:
-            return None
-    
-        #코드로 주식 검색
-        serching_stock=stock.StockInfo()
-    
-        print(stock_code)
-    
-        serching_stock.get(stock_code)
-        serching_stock.stock_market = stock_market
-    
-        try:
-            serching_stock.get(stock_code)
-            serching_stock.stock_market = stock_market
-            #stock과의 연관성이 너무 많다. 증권사 api 쓸줄 알게되면 갈아치울것
-        except:
-            await ctx.send("잘못된 코드명")
-            return None
-    
-        return serching_stock
     #주식 코드인지 아닌지 확인
     def is_stock_code(self, stock_code):
         stock_name = db.StockInfoTable().read_stock_code(stock_code)
