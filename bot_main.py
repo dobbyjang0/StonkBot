@@ -145,7 +145,11 @@ async def 주식(ctx, stock_name="도움", chart_type='일'):
 
     #주식 검색
     serch_stock = bot.get_cog('serch_stock')
-    stock_code, stock_real_name, stock_market, is_ETF, alert_info, *__ = await serch_stock.serch_stock_by_bot(ctx, stock_name)
+    serch_result = await serch_stock.serch_stock_by_bot(ctx, stock_name)
+    stock_code = serch_result.stock_code
+    stock_name = serch_result.stock_name
+    stock_market = serch_result.stock_market
+    alert_info = serch_result.alert_info
     
     if stock_code is None:
         return
@@ -156,14 +160,14 @@ async def 주식(ctx, stock_name="도움", chart_type='일'):
         stock_parser = parser.StockInfo()
         price = stock_parser.get(stock_code).price
         
-        input_variable = {'name' : stock_real_name, 'stock_market' : stock_market, 'code' : stock_code,
+        input_variable = {'name' : stock_name, 'stock_market' : stock_market, 'code' : stock_code,
                           'price' : price, 'chart_type' : chart_type, 'alert_info' : alert_info}
 
         await ctx.send(embed=ef("serch_result2",**input_variable).get)
         return
     
     # 종목코드, 체결시간, 전일대비구분, 전일대비, 등락율, 현재가, 시가, 고가, 저가, 누적거래량, 누적거래대금
-    input_variable = {'name' : stock_real_name, 'stock_market' : stock_market,
+    input_variable = {'name' : stock_name, 'stock_market' : stock_market,
                       'code' : result[0], 'compared_sign' : result[2],
                       'compared_price' : result[3], 'rate' : result[4],
                       'price' : result[5], 'start_price' : result[6],
@@ -186,7 +190,9 @@ async def 계산(ctx, stock_name="도움", stock_count=1):
     
     #주식 검색
     serch_stock = bot.get_cog('serch_stock')
-    stock_code, stock_real_name, *__= await serch_stock.serch_stock_by_bot(ctx, stock_name)
+    serch_result = await serch_stock.serch_stock_by_bot(ctx, stock_name)
+    stock_code = serch_result.stock_code
+    stock_name = serch_result.stock_name
     
     if stock_code is None:
         await ctx.send('주식명 오류?')
@@ -212,7 +218,9 @@ async def 매매동향(ctx, stock_name='도움', input_type=None, chart_type="�
     
     #주식 
     serch_stock = bot.get_cog('serch_stock')
-    stock_code, stock_real_name, *__ = await serch_stock.serch_stock_by_bot(ctx, stock_name)
+    serch_result = await serch_stock.serch_stock_by_bot(ctx, stock_name)
+    stock_code = serch_result.stock_code
+    stock_name = serch_result.stock_name
     
     if stock_code == None:
         return
@@ -230,7 +238,9 @@ async def 가즈아(ctx, stock_name="도움", stock_price=None):
     
     #주식 검색
     serch_stock = bot.get_cog('serch_stock')
-    stock_code, stock_real_name, *__ = await serch_stock.serch_stock_by_bot(ctx, stock_name)
+    serch_result = await serch_stock.serch_stock_by_bot(ctx, stock_name)
+    stock_code = serch_result.stock_code
+    stock_name = serch_result.stock_name
     
     if stock_code == None:
         return
@@ -252,7 +262,7 @@ async def 가즈아(ctx, stock_name="도움", stock_price=None):
     db.GazuaCountTable().insert_update(stock_code)
     
     #주식코드를 기본키로 해서 추가?
-    await ctx.send(embed=ef("gazua", stock_real_name, gazua_count, stock_price).get)
+    await ctx.send(embed=ef("gazua", stock_name, gazua_count, stock_price).get)
     return
     
 # 모의 주식 관련 커맨드
@@ -326,7 +336,11 @@ async def 순위(ctx, stock_name = 'all'):
         stock_name = '원화'
     else:
         serch_stock = bot.get_cog('serch_stock')
-        stock_code, stock_name, *__ = await serch_stock.serch_stock_by_bot(ctx, stock_name)
+        
+        serch_result = await serch_stock.serch_stock_by_bot(ctx, stock_name)
+        stock_code = serch_result.stock_code
+        stock_name = serch_result.stock_name
+        
         df = db.AccountTable().read_rank_by_code(stock_code)
         
         if stock_code is None:
@@ -334,6 +348,12 @@ async def 순위(ctx, stock_name = 'all'):
             return
     
     def get_user_name(user_id):
+        user = bot.get_user(user_id)
+        # get_user는 그 서버에 있는 사람만 얻어줄 수 있나봄 결국에는 fetch_user(id)를 해야하는데
+        # 그러면 지금 같이 한줄로는 못 줄이고 반복문 써서 해야할 듯 
+        # 어차피 많은 수도 아니고 걍 순차적으로 해도 될듯
+        if user is None:
+            return None
         return bot.get_user(user_id).name
     
     df['author_id'] = df['author_id'].map(get_user_name)
@@ -346,7 +366,7 @@ def main():
         #봇 실행
         
         if is_64bits := sys.maxsize > 2**32:
-            print('it_must be run on 32bit!')
+            print('it must be run on 32bit!')
             return
         
         for extension in extensions:

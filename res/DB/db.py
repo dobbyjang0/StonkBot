@@ -410,12 +410,14 @@ class StockInfoTable(Table):
         #
         # df.to_sql(name='stock_code', con=self.connection, if_exists='append',index=False, method='multi')
         # print("저장완료")
-
+        
+        '''
         # 이전 데이터 모두 삭제
         sql = sql_text("""
                        DELETE FROM stock_code;
                        """)
         self.connection.execute(sql)
+        '''
 
         # api 사용하여 종목이름, 종목코드 read
         df_name = self._stock_name()
@@ -433,7 +435,12 @@ class StockInfoTable(Table):
 
         # 병합후 데이터베이스에 저장
         df = pandas.merge(df_name, df_alertdanger, on='code', how='left')
-        df.to_sql(name='stock_code', con=self.connection, if_exists='append', index=False, method='multi')
+        
+        df['uplimit'] = df['uplimit'].map(int)
+        df['downlimit'] = df['downlimit'].map(int)
+        df['beforeclose'] = df['beforeclose'].map(int)
+        
+        df.to_sql(name='stock_code', con=self.connection, if_exists='replace', index=False, method='multi')
         print("저장완료")
 
     
