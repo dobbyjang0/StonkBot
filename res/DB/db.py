@@ -440,7 +440,7 @@ class StockInfoTable(Table):
         df['downlimit'] = df['downlimit'].map(int)
         df['beforeclose'] = df['beforeclose'].map(int)
         
-        df.to_sql(name='stock_code', con=self.connection, if_exists='replace', index=False, method='multi')
+        df.to_sql(name='stock_code', con=self.connection, if_exists='append', index=False, method='multi')
         print("저장완료")
 
     
@@ -456,13 +456,13 @@ class StockInfoTable(Table):
         sql = sql_text("""
                        CREATE TABLE stock_code (
                            `code` varchar(15) PRIMARY KEY,
-                           `name` varchar(15),
+                           `name` varchar(100),
                            `market` varchar(15),
-                           `ETF` varchar(5),
-                           `uplimit` int,
-                           `downlimit` int,
-                           `beforeclose` int,
-                           `type` varchar(10)
+                           `ETF` varchar(10),
+                           `uplimit` int unsigned,
+                           `downlimit` int unsigned,
+                           `beforeclose` int unsigned,
+                           `type` varchar(20)
                            );
                        """)
         
