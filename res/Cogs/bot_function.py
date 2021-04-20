@@ -15,8 +15,8 @@ class serch_stock(commands.Cog):
     #코드일 경우 단순히 검색해본다.
         if self.is_stock_code(stock_name):
             stock_code = stock_name
-            stock_code, stock_real_name, stock_market, is_ETF, alert_info = db.StockInfoTable().read_stock_by_code(stock_code)
-            return stock_code, stock_real_name, stock_market, is_ETF, alert_info
+            stock_code, stock_real_name, stock_market, is_ETF, uplimit, downlimit, beforeclose, alert_info = db.StockInfoTable().read_stock_by_code(stock_code)
+            return stock_code, stock_real_name, stock_market, is_ETF, uplimit, downlimit, beforeclose, alert_info
     
         # 이름일 경우 sql에 검색해봄
         stock_list_pd = db.StockInfoTable().read_stock_name(stock_name)
@@ -26,16 +26,19 @@ class serch_stock(commands.Cog):
         # 0개일 경우
         if stock_list_len == 0:
             await ctx.send("데이터가 없음")
-            return None, None, None, None, None
+            return None, None, None, None, None, None, None, None
         # 1개일 경우
         elif stock_list_len == 1:
             stock_code = stock_list_pd.iat[0, 0]
             stock_real_name = stock_list_pd.iat[0, 1]
             stock_market = stock_list_pd.iat[0, 2]
             is_ETF = stock_list_pd.iat[0, 3]
-            alert_info = stock_list_pd.iat[0, 4]
+            uplimit = stock_list_pd.iat[0, 4]
+            downlimit = stock_list_pd.iat[0, 5]
+            beforeclose = stock_list_pd.iat[0, 6]
+            alert_info = stock_list_pd.iat[0, 7]
             
-            return stock_code, stock_real_name, stock_market, is_ETF, alert_info
+            return stock_code, stock_real_name, stock_market, is_ETF, uplimit, downlimit, beforeclose, alert_info
         
         # 1개 이상일 경우
         else:
@@ -45,7 +48,7 @@ class serch_stock(commands.Cog):
             def check(message: discord.Message):
                 return message.channel == ctx.channel and message.author == ctx.author
             
-            stock_code, stock_real_name, stock_market, is_ETF, alert_info = None, None, None, None, None
+            stock_code, stock_real_name, stock_market, is_ETF, uplimit, downlimit, beforeclose, alert_info = None, None, None, None, None, None, None, None
         
             try:
                 # 숫자 입력을 받는다
@@ -64,18 +67,21 @@ class serch_stock(commands.Cog):
                         
                 else:
                     stock_index = int(check_number)
-                    stock_code = stock_list_pd.iat[stock_index, 0]
-                    stock_real_name = stock_list_pd.iat[stock_index, 1]
-                    stock_market = stock_list_pd.iat[stock_index, 2]
-                    is_ETF = stock_list_pd.iat[stock_index, 3]
-                    alert_info = stock_list_pd.iat[stock_index, 4]
+                    stock_code = stock_list_pd.iat[0, 0]
+                    stock_real_name = stock_list_pd.iat[0, 1]
+                    stock_market = stock_list_pd.iat[0, 2]
+                    is_ETF = stock_list_pd.iat[0, 3]
+                    uplimit = stock_list_pd.iat[0, 4]
+                    downlimit = stock_list_pd.iat[0, 5]
+                    beforeclose = stock_list_pd.iat[0, 6]
+                    alert_info = stock_list_pd.iat[0, 7]
                 
                 await check_number_msg.delete()
             
             finally:
                 # 목록 지우고 출력
                 await list_msg.delete()
-                return stock_code, stock_real_name, stock_market, is_ETF, alert_info
+                return stock_code, stock_real_name, stock_market, is_ETF, uplimit, downlimit, beforeclose, alert_info
             
             
     # 주식의 정보를 불러온다.
@@ -83,9 +89,9 @@ class serch_stock(commands.Cog):
         #코드가 아닐시 검색해본다
         if self.is_stock_code(stock_name):
             stock_code = stock_name
-            stock_code, stock_real_name, stock_market, is_ETF, alert_info = db.StockInfoTable().read_stock_by_code(stock_code)
+            stock_code, stock_real_name, stock_market, is_ETF, uplimit, downlimit, beforeclose, alert_info = db.StockInfoTable().read_stock_by_code(stock_code)
         else:
-            stock_code, stock_real_name, stock_market, is_ETF, alert_info = await self.serch_stock_by_bot(ctx, stock_name)
+            stock_code, stock_real_name, stock_market, is_ETF, uplimit, downlimit, beforeclose, alert_info = await self.serch_stock_by_bot(ctx, stock_name)
         
         if stock_code == None:
             return None
