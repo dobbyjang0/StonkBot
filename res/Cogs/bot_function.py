@@ -10,7 +10,7 @@ class serch_stock(commands.Cog):
 
     # 애매한 주식명이 입력되었을 시
     async def serch_stock_by_bot(self, ctx, stock_name):
-    #코드일 경우 단순히 검색해본다.
+    # 코드일 경우 단순히 검색해본다.
         if self.is_stock_code(stock_name):
             stock_code = stock_name
             stock_code, stock_real_name, stock_market, is_ETF, uplimit, downlimit, beforeclose, alert_info = db.StockInfoTable().read_stock_by_code(stock_code)
