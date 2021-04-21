@@ -2,6 +2,7 @@ from .xing_api import XASession
 from .xing_api import XAQuery
 from .xing_api import XAReal
 from .xing_api import EventHandler
+from .xing_api import Settings
 import json
 from .db import StockInfoTable
 from .db import KRXRealData
@@ -9,14 +10,18 @@ from .db import KRXNewsData
 from .db import KRXIndexData
 import pandas as pd
 import multiprocessing
+import threading
 import datetime
 import time
+import pythoncom
+import win32com.client
 
 # 로그인
 def login():
     """
     {"user_id" : "이베스트증권 ID",
     "user_pw" : "이베스트증권 비밀번호",
+    "mock_pw" : "모의투자 비밀번호",
     "cert_pw" : "공인인증서 비밀번호"}
     형식의 ./xing_user2.json 파일을 읽어 api 로그인
     """
@@ -25,6 +30,21 @@ def login():
         user = json.load(json_file)
     session = XASession()
     session.login(user)
+
+def login_mock():
+    """
+    {"user_id" : "이베스트증권 ID",
+    "user_pw" : "이베스트증권 비밀번호",
+    "mock_pw" : "모의투자 비밀번호",
+    "cert_pw" : "공인인증서 비밀번호"}
+    형식의 ./xing_user2.json 파일을 읽어 api 로그인
+    """
+    file_path = "./xing_user2.json"
+    with open(file_path, "r") as json_file:
+        user = json.load(json_file)
+    session = XASession()
+    session.login(user, server_type=1)
+
 
 # 실시간 체결가 수신 전용 이벤트 핸들러
 class MarketEvent(EventHandler):
@@ -152,7 +172,7 @@ def index_tickdata():
     실시간 감시, db에 업데이트
     {'upcode': '001', 'time': '153210', 'sign': '2', 'change': '4.29', 'drate': '0.13', 'jisu': '3198.62', 'openjisu': '3194.08', 'highjisu': '3206.76', 'lowjisu': '3185.67', 'upjo': '5', 'downjo': '0', 'upjrate': '57.48', 'frgsvalue': '-213424', 'orgsvalue': '-479101'}
     """
-    login()
+    login_mock()
     # index = _index_code()
     index_data = XAReal(IndexEvent)
     # index_data.set_inblock("IJ_", index, field = "upcode")
@@ -178,14 +198,15 @@ def main():
     if __name__ == "__main__":
         login()
         # StockInfoTable().update_table()
-        # process_kospi = multiprocessing.Process(target = kospi_tickdata)
-        # process_kosdaq = multiprocessing.Process(target = kosdaq_tickdata)
+        process_kospi = multiprocessing.Process(target = kospi_tickdata)
+        process_kosdaq = multiprocessing.Process(target = kosdaq_tickdata)
+        process_index = multiprocessing.Process(target = index_tickdata)
         # process_news = multiprocessing.Process(target = news)
-        # process_index = multiprocessing.Process(target=index_tickdata)
-        # process_kospi.start()
-        # process_kosdaq.start()
+        process_kospi.start()
+        time.sleep(3)
+        process_kosdaq.start()
+        time.sleep(3)
+        process_index.start()
         # process_news.start()
-        # process_index.start()
-        # print(len(a))
 
 main()
