@@ -4,6 +4,7 @@ from ..DB.market_data import kosdaq_tickdata
 from ..DB.market_data import index_tickdata
 import multiprocessing
 import discord
+import time
 
 class MetaSingleton(type):
     _instances = {}
@@ -26,9 +27,13 @@ class bot_action(metaclass=MetaSingleton):
         
     async def api_start(self):
         if not self.is_real_time_on:
+            time.sleep(3) 
             self.process_kospi.start()
+            time.sleep(3) 
             self.process_kosdaq.start()
+            time.sleep(3) 
             self.process_index.start()
+            
             self.is_real_time_on = True
             
             print('실시간 데이터 시작 완료')
@@ -61,6 +66,7 @@ class bot_action(metaclass=MetaSingleton):
     '''
     
     async def update_stock_info(self):
+        db.StockInfoTable().drop_table()
         db.StockInfoTable().create_table()
         db.StockInfoTable().update_table()
         

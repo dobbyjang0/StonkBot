@@ -410,12 +410,14 @@ class StockInfoTable(Table):
         #
         # df.to_sql(name='stock_code', con=self.connection, if_exists='append',index=False, method='multi')
         # print("저장완료")
-
+        
+        '''
         # 이전 데이터 모두 삭제
         sql = sql_text("""
                        DELETE FROM stock_code;
                        """)
         self.connection.execute(sql)
+        '''
 
         # api 사용하여 종목이름, 종목코드 read
         df_name = self._stock_name()
@@ -433,23 +435,34 @@ class StockInfoTable(Table):
 
         # 병합후 데이터베이스에 저장
         df = pandas.merge(df_name, df_alertdanger, on='code', how='left')
-        df.to_sql(name='stock_code', con=self.connection, if_exists='replace', index=False, method='multi')
+        
+        df['uplimit'] = df['uplimit'].map(int)
+        df['downlimit'] = df['downlimit'].map(int)
+        df['beforeclose'] = df['beforeclose'].map(int)
+        
+        df.to_sql(name='stock_code', con=self.connection, if_exists='append', index=False, method='multi')
         print("저장완료")
 
     
+    def drop_table(self):
+        sql = sql_text("""
+                       DROP TABLE stock_code;
+                       """)
+        self.connection.execute(sql)
+
     # 최초 테이블 생성
     # 처음 테이블 만들 때 이것으로 만드는거 추천
     def create_table(self):
         sql = sql_text("""
                        CREATE TABLE stock_code (
                            `code` varchar(15) PRIMARY KEY,
-                           `name` varchar(15),
+                           `name` varchar(100),
                            `market` varchar(15),
-                           `ETF` varchar(5),
-                           `uplimit` int,
-                           `downlimit` int,
-                           `beforeclose` int,
-                           `type` varchar(10)
+                           `ETF` varchar(10),
+                           `uplimit` int unsigned,
+                           `downlimit` int unsigned,
+                           `beforeclose` int unsigned,
+                           `type` varchar(20)
                            );
                        """)
         

@@ -10,43 +10,46 @@ class serch_stock(commands.Cog):
 
     # 애매한 주식명이 입력되었을 시
     async def serch_stock_by_bot(self, ctx, stock_name):
-    # 코드일 경우 단순히 검색해본다.
+        capsule = stock_info_capsule()
+        #아직도 의존도가 높아서 db하고 동시에 바꿔줘야한다. db에서 열이름(columns)까지 가져와야 의존도가 0이 될 듯
+        #아님 pd로 가져오면 자동으로 df.columns 하면 되니 편할지도 모르겠다.
+        #아님 db에서 건너오는걸 캡슐로 중간에서 만든다던가? 아직은 지금이 나은듯
+        element_name_tuple = ('stock_code', 'stock_name', 'stock_market', 'is_ETF', 'uplimit', 'downlimit', 'beforeclose', 'alert_info')
+        element_count = 8
+        
+        #코드일 경우 단순히 검색해본다.
         if self.is_stock_code(stock_name):
             stock_code = stock_name
-            stock_code, stock_real_name, stock_market, is_ETF, uplimit, downlimit, beforeclose, alert_info = db.StockInfoTable().read_stock_by_code(stock_code)
-            return stock_code, stock_real_name, stock_market, is_ETF, uplimit, downlimit, beforeclose, alert_info
+            read_result = db.StockInfoTable().read_stock_by_code(stock_code)
+            for idx in range(element_count):
+                capsule.add_stuff(element_name_tuple[idx], read_result[idx])
+            
+            return capsule
     
         # 이름일 경우 sql에 검색해봄
-        stock_list_pd = db.StockInfoTable().read_stock_name(stock_name)
+        stock_list_df = db.StockInfoTable().read_stock_name(stock_name)
         
         # 데이터의 갯수에 따라
-        stock_list_len = len(stock_list_pd)
+        stock_list_len = len(stock_list_df)
         # 0개일 경우
         if stock_list_len == 0:
             await ctx.send("데이터가 없음")
-            return None, None, None, None, None, None, None, None
+            return capsule
+        
         # 1개일 경우
         elif stock_list_len == 1:
-            stock_code = stock_list_pd.iat[0, 0]
-            stock_real_name = stock_list_pd.iat[0, 1]
-            stock_market = stock_list_pd.iat[0, 2]
-            is_ETF = stock_list_pd.iat[0, 3]
-            uplimit = stock_list_pd.iat[0, 4]
-            downlimit = stock_list_pd.iat[0, 5]
-            beforeclose = stock_list_pd.iat[0, 6]
-            alert_info = stock_list_pd.iat[0, 7]
-            
-            return stock_code, stock_real_name, stock_market, is_ETF, uplimit, downlimit, beforeclose, alert_info
+            for idx in range(element_count):
+                capsule.add_stuff(element_name_tuple[idx], stock_list_df.iat[0,idx])
+
+            return capsule
         
         # 1개 이상일 경우
         else:
             # 목록을 보여준다
-            list_msg = await ctx.send(embed=ef("serch_list", stock_list_pd).get)
+            list_msg = await ctx.send(embed=ef("serch_list", stock_list_df).get)
             
             def check(message: discord.Message):
                 return message.channel == ctx.channel and message.author == ctx.author
-            
-            stock_code, stock_real_name, stock_market, is_ETF, uplimit, downlimit, beforeclose, alert_info = None, None, None, None, None, None, None, None
         
             try:
                 # 숫자 입력을 받는다
@@ -65,27 +68,51 @@ class serch_stock(commands.Cog):
                         
                 else:
                     stock_index = int(check_number)
-                    stock_code = stock_list_pd.iat[0, 0]
-                    stock_real_name = stock_list_pd.iat[0, 1]
-                    stock_market = stock_list_pd.iat[0, 2]
-                    is_ETF = stock_list_pd.iat[0, 3]
-                    uplimit = stock_list_pd.iat[0, 4]
-                    downlimit = stock_list_pd.iat[0, 5]
-                    beforeclose = stock_list_pd.iat[0, 6]
-                    alert_info = stock_list_pd.iat[0, 7]
-                
+                    
+                    for idx in range(element_count):
+                        capsule.add_stuff(element_name_tuple[idx], stock_list_df.iat[stock_index,idx])
+
                 await check_number_msg.delete()
             
             finally:
                 # 목록 지우고 출력
                 await list_msg.delete()
-                return stock_code, stock_real_name, stock_market, is_ETF, uplimit, downlimit, beforeclose, alert_info
+                return capsule
             
     #주식 코드인지 아닌지 확인
     def is_stock_code(self, stock_code):
         stock_name = db.StockInfoTable().read_stock_code(stock_code)
     
         return (stock_name is not None)
+
+class stock_info_capsule():
+    def __init__(self):
+        self.stock_code = None
+        self.stock_name = None
+        self.stock_market = None
+        self.is_ETF = None
+        self.uplimit = None
+        self.downlimit = None
+        self.beforeclose = None
+        self.alert_info = None
     
+    def add_stuff(self, element_name, content):
+        self.__dict__[element_name] = content
+    
+    def to_dict(self):
+        return self.__dict__
+
 def setup(bot):
     bot.add_cog(serch_stock(bot))
+    
+def main():
+    if __name__ == "__main__":
+        a = stock_info_capsule()
+        b = stock_info_capsule()
+        a.add_stuff('hh', 'jj')
+        b.add_stuff('hh', 'kk')
+        print(a.hh)
+        print(b.hh)
+        pass
+    
+main()
