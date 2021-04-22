@@ -929,7 +929,7 @@ class KRXIndexData(Table):
                            `sign` tinyint,
                            `change` decimal(10,2),
                            `drate` decimal(5,2),
-                           `jisu` decimal(5,2),
+                           `jisu` decimal(10,2),
                            `openjisu` decimal(10,2),
                            `highjisu` decimal(10,2),
                            `lowjisu` decimal(10,2),
@@ -968,7 +968,6 @@ class KRXIndexData(Table):
 def main():
     import market_data
     market_data.login()
-    a = StockInfoTable()
     a.create_table()
     a.update_table()
     #KRXIndexData().update()

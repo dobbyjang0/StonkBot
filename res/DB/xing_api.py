@@ -168,9 +168,15 @@ class XASession:
 
         """
         user_id = user_info['user_id']
-        user_pw = user_info['user_pw']
-        cert_pw = user_info['cert_pw']
-        self.com_obj.Login(user_id, user_pw, cert_pw, server_type, False)
+        if server_type == 0:
+            self.com_obj.ConnectServer("hts.ebestsec.co.kr", 20001)
+            user_pw = user_info['user_pw']
+            cert_pw = user_info['cert_pw']
+        else:
+            self.com_obj.ConnectServer("demo.ebestsec.co.kr", 20001)
+            user_pw = user_info["mock_pw"]
+            cert_pw = ''
+        self.com_obj.Login(user_id, user_pw, cert_pw, 0, False)
         while self.login_status == 0:
             pythoncom.PumpWaitingMessages()
     
