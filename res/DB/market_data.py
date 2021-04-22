@@ -19,6 +19,8 @@ import win32com.client
 # 로그인
 def login():
     """
+    실서버 로그인
+
     {"user_id" : "이베스트증권 ID",
     "user_pw" : "이베스트증권 비밀번호",
     "mock_pw" : "모의투자 비밀번호",
@@ -33,11 +35,13 @@ def login():
 
 def login_mock():
     """
+    모의투자서버 로그인
+
     {"user_id" : "이베스트증권 ID",
     "user_pw" : "이베스트증권 비밀번호",
     "mock_pw" : "모의투자 비밀번호",
     "cert_pw" : "공인인증서 비밀번호"}
-    형식의 ./xing_user2.json 파일을 읽어 api 로그인
+    형식의 ./xing_user2.json 파일을 읽어 api 서버로 로그인
     """
     file_path = "./xing_user2.json"
     with open(file_path, "r") as json_file:
