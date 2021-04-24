@@ -1,10 +1,62 @@
 from ..DB import db
-from ..DB.market_data import kospi_tickdata
-from ..DB.market_data import kosdaq_tickdata
-from ..DB.market_data import index_tickdata
+from ..DB.market_data import Kospi
+from ..DB.market_data import Kosdaq
+from ..DB.market_data import KrIndex
 import multiprocessing
 import discord
 import time
+
+class RealDataMediator:
+    """
+    실시간 데이터 start, terminate 전용 mediator
+
+    Attributes:
+        process_list: market_data.py 의 실시간데이터 감시용 클래스의 인스턴스를 요소로 하는 리스트.
+    """
+    def __init__(self):
+        self.process_list = []
+
+    def add_process(self, target):
+        """
+        실시간 감시를 실행할 인스턴스를 등록한다
+
+        Args:
+            target: 등록할 실시간데이터 감시용 클래스 인스턴스
+        """
+        self.process_list.append(target)
+
+    def on_start(self):
+        """
+        multiprocess.Process 의 start() 메소드를 실행시켜 process_list 에 등록된 프로세스 시작
+        """
+        for process in self.process_list:
+            time.sleep(4)
+            process.start()
+
+    def on_terminate(self):
+        """
+        multiprocess.Process 의 terminate() 메소드를 실행시켜 process_list 에 등록된 프로세스 종료
+        """
+        for process in self.process_list:
+            time.sleep(4)
+            process.terminate()
+
+class LoadReal:
+    """
+    실시간데이터 수신 on, off 여부를 전달하는 클래스
+    """
+    def __init__(self):
+        self.mediator = None
+
+    def set_mediator(self, mediator):
+        self.mediator = mediator
+
+    def real_start(self):
+        self.mediator.on_start()
+
+    def real_terminate(self):
+        self.mediator.on_terminate()
+
 
 class MetaSingleton(type):
     _instances = {}
@@ -17,9 +69,15 @@ class bot_action(metaclass=MetaSingleton):
     def __init__(self, bot):
         self.bot = bot
         self.channel = self.bot.get_channel(833299968987103242)
-        self.process_kospi = multiprocessing.Process(target=kospi_tickdata)
-        self.process_kosdaq = multiprocessing.Process(target=kosdaq_tickdata)
-        self.process_index = multiprocessing.Process(target=index_tickdata)
+
+        self.real = LoadReal()
+        self.mediator = RealDataMediator()
+        self.real.set_mediator(self.mediator)
+
+        self.mediator.add_process(Kospi())
+        self.mediator.add_process(Kosdaq())
+        self.mediator.add_process(KrIndex())
+
         self.is_real_time_on = False
 
         print('bot_action 생성')
@@ -27,12 +85,7 @@ class bot_action(metaclass=MetaSingleton):
         
     async def api_start(self):
         if not self.is_real_time_on:
-            time.sleep(3) 
-            self.process_kospi.start()
-            time.sleep(3) 
-            self.process_kosdaq.start()
-            time.sleep(3) 
-            self.process_index.start()
+            self.real.real_start()
             
             self.is_real_time_on = True
             
@@ -44,16 +97,11 @@ class bot_action(metaclass=MetaSingleton):
         
         return
     
-    ''' 
-    아직 어케하는지 잘 모르겠다. 하지말것.
+
     async def api_stop(self):
         if self.is_real_time_on:
-            self.process_kospi.terminate()
-            self.process_kospi.close()
-            self.process_kosdaq.terminate()
-            self.process_kosdaq.close()
-            self.process_index.terminate()
-            self.process_index.close()
+            self.real.real_terminate()
+
             self.is_real_time_on = False
             
             print('실시간 데이터 종료')
@@ -63,7 +111,7 @@ class bot_action(metaclass=MetaSingleton):
             await self.channel.send('실시간 데이터 이미 꺼짐')
 
         return
-    '''
+
     
     async def update_stock_info(self):
         db.StockInfoTable().drop_table()
