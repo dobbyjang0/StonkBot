@@ -1,13 +1,13 @@
-from xing_api import XASession
-from xing_api import XAQuery
-from xing_api import XAReal
-from xing_api import EventHandler
+from .xing_api import XASession
+from .xing_api import XAQuery
+from .xing_api import XAReal
+from .xing_api import EventHandler
 from xing_api import Settings
 import json
 from db import StockInfoTable
-from db import KRXRealData
-from db import KRXNewsData
-from db import KRXIndexData
+from .db import KRXRealData
+from .db import KRXNewsData
+from .db import KRXIndexData
 import pandas as pd
 import multiprocessing
 import threading
@@ -234,13 +234,11 @@ def main():
         process_kospi = Kospi()
         process_kosdaq = Kosdaq()
         process_index = KrIndex()
+        test_list = [Kospi(), Kosdaq(), KrIndex()]
         # process_news = multiprocessing.Process(target = news)
-        process_kospi.start()
-        time.sleep(3)
-        print(2)
-        process_kosdaq.start()
-        time.sleep(3)
-        process_index.start()
+        for i in test_list:
+            time.sleep(3)
+            i.start()
         # time.sleep(15)
         # process_kospi.terminate()
         # print("kospi terminate")
