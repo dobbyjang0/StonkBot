@@ -3,7 +3,6 @@ from discord.ext import commands, tasks
 import pandas
 from datetime import date, datetime
 from datetime import time
-import nest_asyncio
 import asyncio
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 import multiprocessing
@@ -15,10 +14,7 @@ from res.Class.embed_form import embed_factory as ef
 from res.Class import triggers
 from res.DB import db
 
-from res.DB.market_data import login
-
-
-nest_asyncio.apply()
+from res.DB.market_data import Login
 
 intents = discord.Intents.default()
 intents.members = True
@@ -37,7 +33,7 @@ async def on_ready():
     print(f"봇 이름: {bot.user.name}")
     print(f"ID: {bot.user.id}")
         
-    login()
+    Login().login()
     print('로그인 완료')
     if datetime.now().hour > 7 and datetime.now().hour < 17:
         await triggers.bot_action(bot).api_start()

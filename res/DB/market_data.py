@@ -216,6 +216,7 @@ def main():
         # process_news = multiprocessing.Process(target = news)
         process_kospi.start()
         time.sleep(3)
+        print(2)
         process_kosdaq.start()
         time.sleep(3)
         process_index.start()
