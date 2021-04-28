@@ -1,20 +1,38 @@
-from .xing_api import XASession
-from .xing_api import XAQuery
-from .xing_api import XAReal
-from .xing_api import EventHandler
-from .xing_api import Settings
+from xing_api import XASession
+from xing_api import XAQuery
+from xing_api import XAReal
+from xing_api import EventHandler
+from xing_api import Settings
 import json
-from .db import StockInfoTable
-from .db import KRXRealData
-from .db import KRXNewsData
-from .db import KRXIndexData
+from db import StockInfoTable
+from db import KRXRealData
+from db import KRXNewsData
+from db import KRXIndexData
 import pandas as pd
-from multiprocessing import Process
+import multiprocessing
 import threading
 import datetime
 import time
 import pythoncom
 import win32com.client
+
+
+def login():
+    """
+    실서버 로그인
+
+    {"user_id" : "이베스트증권 ID",
+    "user_pw" : "이베스트증권 비밀번호",
+    "mock_pw" : "모의투자 비밀번호",
+    "cert_pw" : "공인인증서 비밀번호"}
+    형식의 ./xing_user2.json 파일을 읽어 api 로그인
+    """
+    with open('./xing_user2.json', "r") as json_file:
+        user = json.load(json_file)
+    session = XASession()
+    session.login(user)
+
+
 
 # 로그인
 class Login:
@@ -145,7 +163,7 @@ class TRData:
         result = [query.get_outblock('t8424OutBlock', "upcode", i)["upcode"] for i in range(out_count)]
         return result
 
-class Kospi(Process):
+class Kospi(multiprocessing.Process):
     def run(self):
         """
         KOSPI 모든종목 실시간 감시
@@ -158,8 +176,9 @@ class Kospi(Process):
         kospi_data.set_inblock("S3_", kospi)
         kospi_data.set_outblock(["shcode", "chetime", "sign", "change", "drate", "price", "open", "high", "low", "volume", "value"])
         kospi_data.start()
+        return
 
-class Kosdaq(Process):
+class Kosdaq(multiprocessing.Process):
     def run(self):
         """
         KOSDAQ 모든종목 실시간 감시
@@ -172,8 +191,9 @@ class Kosdaq(Process):
         kosdaq_data.set_inblock("K3_", kosdaq)
         kosdaq_data.set_outblock(["shcode", "chetime", "sign", "change", "drate", "price", "open", "high", "low", "volume", "value"])
         kosdaq_data.start()
+        return
 
-class KrIndex(Process):
+class KrIndex(multiprocessing.Process):
     def run(self):
         """
         업종별 지수
@@ -190,8 +210,9 @@ class KrIndex(Process):
         index_data.set_inblock("IJ_", ['001', '301'], field="upcode")
         index_data.set_outblock(["upcode", "time", "sign", "change", "drate", "jisu", "openjisu", "highjisu", "lowjisu", "upjo", "downjo", "upjrate", "frgsvalue", "orgsvalue"])
         index_data.start()
+        return
 
-class News(Process):
+class News(multiprocessing.Process):
     def run(self):
         """
         실시간 뉴스데이터 수신
