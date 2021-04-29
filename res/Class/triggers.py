@@ -70,9 +70,6 @@ class bot_action(metaclass=MetaSingleton):
         self.channel = self.bot.get_channel(833299968987103242)
 
         self.process_list = []
-        self.process_list.append(market_data.Kospi())
-        self.process_list.append(market_data.Kosdaq())
-        self.process_list.append(market_data.KrIndex())
 
         self.is_real_time_on = False
 
@@ -90,16 +87,20 @@ class bot_action(metaclass=MetaSingleton):
     async def api_start(self):
         if not self.is_real_time_on:
             # self.real.real_start()
-            
+
             self.is_real_time_on = True
-            
+
+            self.process_list.append(market_data.Kospi())
+            self.process_list.append(market_data.Kosdaq())
+            self.process_list.append(market_data.KrIndex())
+
             for i in self.process_list:
                 time.sleep(3)
                 i.start()
             #time.sleep(3)
             #process_index.start()
-            
-            
+
+
             print('실시간 데이터 시작 완료')
             await self.channel.send('실시간 데이터 시작 완료')
         else:
@@ -111,11 +112,13 @@ class bot_action(metaclass=MetaSingleton):
 
     async def api_stop(self):
         if self.is_real_time_on:
-            for i in self.process_list:
-                time.sleep(3)
+            for i in reversed(self.process_list):
+                time.sleep(0.1)
                 i.terminate()
+            del self.process_list[:]
 
             self.is_real_time_on = False
+
             
             print('실시간 데이터 종료')
             await self.channel.send('실시간 데이터 종료')
