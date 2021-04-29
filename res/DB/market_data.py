@@ -2,9 +2,9 @@ from .xing_api import XASession
 from .xing_api import XAQuery
 from .xing_api import XAReal
 from .xing_api import EventHandler
-from xing_api import Settings
+from .xing_api import Settings
 import json
-from db import StockInfoTable
+from .db import StockInfoTable
 from .db import KRXRealData
 from .db import KRXNewsData
 from .db import KRXIndexData
@@ -231,9 +231,9 @@ def main():
     if __name__ == "__main__":
         Login().login()
         # StockInfoTable().update_table()
-        process_kospi = Kospi()
-        process_kosdaq = Kosdaq()
-        process_index = KrIndex()
+        # process_kospi = Kospi()
+        # process_kosdaq = Kosdaq()
+        # process_index = KrIndex()
         test_list = [Kospi(), Kosdaq(), KrIndex()]
         # process_news = multiprocessing.Process(target = news)
         for i in test_list:

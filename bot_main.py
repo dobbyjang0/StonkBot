@@ -81,7 +81,7 @@ async def 관리(ctx, action_type=None):
     # 실시간 끝, 하지 말것
     elif action_type == '끝':
         pass
-        #await triggers.bot_action(bot).api_stop()
+        await triggers.bot_action(bot).api_stop()
     # 주식목록 업데이트
     elif action_type == '업데이트':
         await triggers.bot_action(bot).update_stock_info()
@@ -361,9 +361,9 @@ def main():
     if __name__ == "__main__":
         #봇 실행
         
-        if is_64bits := sys.maxsize > 2**32:
-            print('it must be run on 32bit!')
-            return
+        # if is_64bits := sys.maxsize > 2**32:
+        #     print('it must be run on 32bit!')
+        #     return
         
         for extension in extensions:
             try:
