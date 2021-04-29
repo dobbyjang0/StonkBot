@@ -27,25 +27,23 @@ extensions = [
 
 @bot.event
 async def on_ready():
-    
-    
     print("--- 연결 성공 ---")
     print(f"봇 이름: {bot.user.name}")
     print(f"ID: {bot.user.id}")
         
     Login().login()
     print('로그인 완료')
-    if datetime.now().hour > 7 and datetime.now().hour < 17:
+    if datetime.now().hour >= 8 and datetime.now().hour < 17:
         await triggers.bot_action(bot).api_start()
         print('실시간 데이터 시작')
     else:
         await bot.get_channel(833299968987103242).send('실시간 데이터 시작 안함')
     
     sched = AsyncIOScheduler(timezone="Asia/Seoul")
-    sched.add_job(triggers.bot_action(bot).api_start, 'cron', hour=7)
+    sched.add_job(triggers.bot_action(bot).api_start, 'cron', hour=8)
     # 봇 끄는거 확실히 완성하고 주석표시 지울 것
     # sched.add_job(triggers.bot_action(bot).api_stop, 'cron', hour=15)
-    sched.add_job(triggers.bot_action(bot).update_stock_info, 'cron', hour=4)
+    sched.add_job(triggers.bot_action(bot).update_stock_info, 'cron', hour=7)
     
     sched.start()
     
@@ -81,7 +79,7 @@ async def 관리(ctx, action_type=None):
     # 실시간 끝, 하지 말것
     elif action_type == '끝':
         pass
-        #await triggers.bot_action(bot).api_stop()
+        # await triggers.bot_action(bot).api_stop()
     # 주식목록 업데이트
     elif action_type == '업데이트':
         await triggers.bot_action(bot).update_stock_info()
@@ -95,7 +93,7 @@ async def 테스트(ctx):
     await ctx.send(ctx.author)
     await ctx.send(ctx.author.id)
     await ctx.send(bot.get_user(ctx.author.id))
-    #await ctx.send(embed=ef("testembed").get)
+    # await ctx.send(embed=ef("testembed").get)
 
 @bot.command(aliases=['도움'])
 async def help_all(ctx, help_input=None):
@@ -127,7 +125,7 @@ async def 지수(ctx, index_name='도움', chart_type='일'):
             await ctx.send('결과 없음')
             return
         
-        await ctx.send(embed=ef("serch_result_world",**index_parser.to_dict(), chart_type=chart_type).get)
+        await ctx.send(embed=ef("serch_result_world", **index_parser.to_dict(), chart_type=chart_type).get)
 
 
 # 주식 검색 기능
@@ -137,9 +135,9 @@ async def 주식(ctx, stock_name="도움", chart_type='일'):
         await ctx.send(embed=ef('help_serch').get)
         return
     
-    #나중에 코스피, 코스닥 함수로 빼기
+    # 나중에 코스피, 코스닥 함수로 빼기
 
-    #주식 검색
+    # 주식 검색
     serch_stock = bot.get_cog('serch_stock')
     serch_result = await serch_stock.serch_stock_by_bot(ctx, stock_name)
     stock_code = serch_result.stock_code
@@ -184,7 +182,7 @@ async def 계산(ctx, stock_name="도움", stock_count=1):
         await ctx.send('주식 갯수는 숫자를 입력해 주세요')
         return
     
-    #주식 검색
+    # 주식 검색
     serch_stock = bot.get_cog('serch_stock')
     serch_result = await serch_stock.serch_stock_by_bot(ctx, stock_name)
     stock_code = serch_result.stock_code
@@ -206,13 +204,13 @@ async def 계산(ctx, stock_name="도움", stock_count=1):
 @bot.command(aliases=["매매현황", '동향', '현황', '매매'])
 async def 매매동향(ctx, stock_name='도움', input_type=None, chart_type="월"):
     if stock_name == "도움":
-        #await ctx.send(embed=ef('help_gazua').get)
+        # await ctx.send(embed=ef('help_gazua').get)
         return
     if input_type not in ['외국인', '기관']:
         await ctx.send('외국인, 기관 입력해주세요')
         return
     
-    #주식 
+    # 주식
     serch_stock = bot.get_cog('serch_stock')
     serch_result = await serch_stock.serch_stock_by_bot(ctx, stock_name)
     stock_code = serch_result.stock_code
@@ -224,21 +222,21 @@ async def 매매동향(ctx, stock_name='도움', input_type=None, chart_type="�
     await ctx.send(embed=ef('trading_trend', name=stock_name, code=stock_code, input_type=input_type, chart_type=chart_type).get)
     
                
-#가즈아 기능
-#나중에 가격도 검색해서 로그에 넣게 바꾸기?
+# 가즈아 기능
+# 나중에 가격도 검색해서 로그에 넣게 바꾸기?
 @bot.command()
 async def 가즈아(ctx, stock_name="도움", stock_price=None):
     if stock_name == "도움":
         await ctx.send(embed=ef('help_gazua').get)
         return
     
-    #주식 검색
+    # 주식 검색
     serch_stock = bot.get_cog('serch_stock')
     serch_result = await serch_stock.serch_stock_by_bot(ctx, stock_name)
     stock_code = serch_result.stock_code
     stock_name = serch_result.stock_name
     
-    if stock_code == None:
+    if stock_code is None:
         return
     
     if stock_price and stock_price.isdigit():
@@ -257,7 +255,7 @@ async def 가즈아(ctx, stock_name="도움", stock_price=None):
     gazua_count = db.GazuaCountTable().read(stock_code)    
     db.GazuaCountTable().insert_update(stock_code)
     
-    #주식코드를 기본키로 해서 추가?
+    # 주식코드를 기본키로 해서 추가?
     await ctx.send(embed=ef("gazua", stock_name, gazua_count, stock_price).get)
     return
     
@@ -272,20 +270,20 @@ async def mock_support_fund(ctx):
         print("에러")
         return
     
-    #처음일경우 지원금 500만
+    # 처음일경우 지원금 500만
     if fund_get_result is None:
         db.SupportFundTable().insert(user_id)
         db.AccountTable().insert(user_id, "KRW", 3000000, 3000000)
         await ctx.send(embed=ef("mock_support_first").get)
         return
-    #아닐경우 매일마다 3만
+    # 아닐경우 매일마다 3만
     else:
         last_get_time, get_count = fund_get_result
         if date.today() != last_get_time:
             db.SupportFundTable().update(user_id)
             db.AccountTable().update(user_id, "KRW", 30000, 30000)
             await ctx.send(embed=ef("mock_support_second", get_count).get)
-            #후원하면 지원금 묵혀서 얻는 것은 어떨까
+            # 후원하면 지원금 묵혀서 얻는 것은 어떨까
         else:
             await ctx.send(embed=ef("mock_support_no").get)
 
@@ -311,7 +309,7 @@ async def mock_sell_full(ctx, stock_name=None, stock_count='1'):
 
 
 @bot.command(name="보유")
-async def mock_have(ctx, stock_name=None, stock_count=1):
+async def mock_have(ctx, stock_name=None):
     user_id = ctx.author.id
     fund_list = db.AccountTable().read_all(user_id)
     
@@ -359,7 +357,7 @@ async def 순위(ctx, stock_name = 'all'):
 
 def main():
     if __name__ == "__main__":
-        #봇 실행
+        # 봇 실행
         
         if is_64bits := sys.maxsize > 2**32:
             print('it must be run on 32bit!')

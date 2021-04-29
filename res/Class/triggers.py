@@ -90,7 +90,7 @@ class bot_action(metaclass=MetaSingleton):
             
             process_kospi = market_data.Kospi()
             process_kosdaq = market_data.Kosdaq()
-            # process_index = KrIndex()
+            process_index = market_data.KrIndex()
             # process_news = multiprocessing.Process(target = news)
             time.sleep(3)
             process_kospi.start()
@@ -99,8 +99,9 @@ class bot_action(metaclass=MetaSingleton):
             print(2)
             process_kosdaq.start()
             print('코스닥 시작')
-            #time.sleep(3)
-            #process_index.start()
+            time.sleep(3)
+            process_index.start()
+            print('지수 시작?')
             
             
             print('실시간 데이터 시작 완료')
@@ -128,7 +129,7 @@ class bot_action(metaclass=MetaSingleton):
 
     
     async def update_stock_info(self):
-        db.StockInfoTable().drop_table()
+        # db.StockInfoTable().drop_table()
         db.StockInfoTable().create_table()
         db.StockInfoTable().update_table()
         
