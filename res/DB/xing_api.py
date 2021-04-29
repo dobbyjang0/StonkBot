@@ -75,13 +75,13 @@ class EventHandler:
 
     def OnLogin(self):
         pass
-    
+
     def OnDisconnect(self):
         pass
-    
+
     def OnReceiveData(self):
         pass
-    
+
     def OnReceiveRealData(self):
         pass
 

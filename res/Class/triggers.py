@@ -69,6 +69,13 @@ class bot_action(metaclass=MetaSingleton):
         self.bot = bot
         self.channel = self.bot.get_channel(833299968987103242)
 
+        self.process_list = []
+        self.process_list.append(market_data.Kospi())
+        self.process_list.append(market_data.Kosdaq())
+        self.process_list.append(market_data.KrIndex())
+
+        self.is_real_time_on = False
+
         # self.real = LoadReal()
         # self.mediator = RealDataMediator()
         # self.real.set_mediator(self.mediator)
@@ -76,8 +83,6 @@ class bot_action(metaclass=MetaSingleton):
         # self.mediator.add_process(Kospi())
         # self.mediator.add_process(Kosdaq())
         # self.mediator.add_process(KrIndex())
-
-        self.is_real_time_on = False
 
         print('bot_action 생성')
         
@@ -88,22 +93,13 @@ class bot_action(metaclass=MetaSingleton):
             
             self.is_real_time_on = True
             
-            process_kospi = market_data.Kospi()
-            process_kosdaq = market_data.Kosdaq()
-            process_index = market_data.KrIndex()
-            # process_news = multiprocessing.Process(target = news)
-            time.sleep(3)
-            process_kospi.start()
-            print('코스피 시작')
-            time.sleep(3)
-            print(2)
-            process_kosdaq.start()
-            print('코스닥 시작')
-            time.sleep(3)
-            process_index.start()
-            print('지수 시작?')
-            
-            
+
+            for i in self.process_list:
+                time.sleep(3)
+                i.start()
+            #time.sleep(3)
+            #process_index.start()
+                        
             print('실시간 데이터 시작 완료')
             await self.channel.send('실시간 데이터 시작 완료')
         else:
@@ -115,7 +111,9 @@ class bot_action(metaclass=MetaSingleton):
 
     async def api_stop(self):
         if self.is_real_time_on:
-            self.real.real_terminate()
+            for i in self.process_list:
+                time.sleep(3)
+                i.terminate()
 
             self.is_real_time_on = False
             
