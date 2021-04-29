@@ -411,13 +411,13 @@ class StockInfoTable(Table):
         # df.to_sql(name='stock_code', con=self.connection, if_exists='append',index=False, method='multi')
         # print("저장완료")
         
-        '''
+
         # 이전 데이터 모두 삭제
         sql = sql_text("""
                        DELETE FROM stock_code;
                        """)
         self.connection.execute(sql)
-        '''
+
 
         # api 사용하여 종목이름, 종목코드 read
         df_name = self._stock_name()

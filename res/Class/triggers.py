@@ -93,13 +93,13 @@ class bot_action(metaclass=MetaSingleton):
             
             self.is_real_time_on = True
             
+
             for i in self.process_list:
                 time.sleep(3)
                 i.start()
             #time.sleep(3)
             #process_index.start()
-            
-            
+                        
             print('실시간 데이터 시작 완료')
             await self.channel.send('실시간 데이터 시작 완료')
         else:
@@ -127,7 +127,7 @@ class bot_action(metaclass=MetaSingleton):
 
     
     async def update_stock_info(self):
-        db.StockInfoTable().drop_table()
+        # db.StockInfoTable().drop_table()
         db.StockInfoTable().create_table()
         db.StockInfoTable().update_table()
         
