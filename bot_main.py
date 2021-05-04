@@ -42,7 +42,7 @@ async def on_ready():
     sched = AsyncIOScheduler(timezone="Asia/Seoul")
     sched.add_job(triggers.bot_action(bot).api_start, 'cron', hour=8)
     # 봇 끄는거 확실히 완성하고 주석표시 지울 것
-    # sched.add_job(triggers.bot_action(bot).api_stop, 'cron', hour=15)
+    sched.add_job(triggers.bot_action(bot).api_stop, 'cron', hour=16)
     sched.add_job(triggers.bot_action(bot).update_stock_info, 'cron', hour=7)
     
     sched.start()
@@ -53,7 +53,7 @@ async def on_ready():
     elif bot.user.name == 'StonkBot':
         await bot.get_channel(833299968987103242).send('봇 켜짐')
     
-#관리 코드
+# 관리 코드
 @bot.command()
 async def 킬(ctx):
     if ctx.author.id not in [378887088524886016, 731836288147259432, 797492145980047361]:
@@ -97,7 +97,7 @@ async def 테스트(ctx):
     await ctx.send(bot.get_user(ctx.author.id))
     # await ctx.send(embed=ef("testembed").get)
 
-@bot.command(aliases=['도움'])
+@bot.command(aliases=('도움',))
 async def help_all(ctx, help_input=None):
     help_type_dic = {None:'help_all', '주식':'help_serch', '검색':'help_serch',
                      '모의':'help_mock', '코스피':'help_kos', '코스닥':'help_kos',
@@ -116,8 +116,29 @@ async def 지수(ctx, index_name='도움', chart_type='일'):
     if index_name == "도움":
         await ctx.send(embed=ef('help_index').get)
         return
-    elif index_name in ['코스피', 'kospi', '코스닥', 'kosdaq']:
-        await ctx.send('준비중')
+    elif index_name in ('코스피', 'kospi', 'KOSPI', '코스닥', 'kosdaq', 'KOSDAQ'):
+        if index_name in ('코스피', 'kospi', 'KOSPI'):
+            index_real_name = 'KOSPI'
+            index_code = '001'
+        elif index_name in ('코스닥', 'kosdaq', 'KOSDAQ'):
+            index_real_name = 'KOSDAQ'
+            index_code = '301'
+
+        result = db.KRXIndexData().read(index_code)
+
+        if result is None:
+            print("지수 오류")
+            return
+
+        #이름,
+        input_variable = {'name': index_real_name, 'compared_sign': result[2],
+                          'compared_price': result[3], 'rate': result[4],
+                          'price': result[5], 'start_price': result[6],
+                          'high_price': result[7], 'low_price': result[8],
+                          'frgsvalue': result[12], 'orgsvalue': result[13],
+                          'chart_type': chart_type}
+
+        await ctx.send(embed=ef("serch_result_index", **input_variable).get)
         return
     else:
         index_parser = parser.IndexInfo()
@@ -131,7 +152,7 @@ async def 지수(ctx, index_name='도움', chart_type='일'):
 
 
 # 주식 검색 기능
-@bot.command(aliases=['검색'])
+@bot.command(aliases=('검색', 'ㄱㅅ', 'ㅈㅅ', 'ㄳ'))
 async def 주식(ctx, stock_name="도움", chart_type='일'):
     if stock_name == "도움":
         await ctx.send(embed=ef('help_serch').get)
@@ -203,7 +224,7 @@ async def 계산(ctx, stock_name="도움", stock_count=1):
     await ctx.send(embed=ef("calculate", stock_count=stock_count, name=stock_name, price=stock_price).get)
     # 나중에 수수료 계산도 넣어주자
 
-@bot.command(aliases=["매매현황", '동향', '현황', '매매'])
+@bot.command(aliases=("매매현황", '동향', '현황', '매매', 'ㅁㅁ'))
 async def 매매동향(ctx, stock_name='도움', input_type=None, chart_type="월"):
     if stock_name == "도움":
         # await ctx.send(embed=ef('help_gazua').get)
@@ -226,7 +247,7 @@ async def 매매동향(ctx, stock_name='도움', input_type=None, chart_type="�
                
 # 가즈아 기능
 # 나중에 가격도 검색해서 로그에 넣게 바꾸기?
-@bot.command()
+@bot.command(aliases=('ㄱㅈㅇ',))
 async def 가즈아(ctx, stock_name="도움", stock_price=None):
     if stock_name == "도움":
         await ctx.send(embed=ef('help_gazua').get)
@@ -289,22 +310,22 @@ async def mock_support_fund(ctx):
         else:
             await ctx.send(embed=ef("mock_support_no").get)
 
-@bot.command(name="매수")
+@bot.command(name="매수", aliases=('ㅁㅅ',))
 async def mock_buy(ctx, stock_name=None, stock_count='1'):
      mock = bot.get_cog('mock_trans')
      await mock.mock_buy(ctx, stock_name, stock_count)
 
-@bot.command(name="풀매수")
+@bot.command(name="풀매수", aliases=('ㅍㅁㅅ',))
 async def mock_buy_full(ctx, stock_name=None):
      mock = bot.get_cog('mock_trans')
      await mock.mock_buy(ctx, stock_name, '풀')
     
-@bot.command(name="매도")
+@bot.command(name="매도", aliases=('ㅁㄷ',))
 async def mock_sell(ctx, stock_name=None, stock_count='1'):
     mock = bot.get_cog('mock_trans')
     await mock.mock_sell(ctx, stock_name, stock_count)
     
-@bot.command(name="풀매도")
+@bot.command(name="풀매도", aliases=('ㅍㅁㄷ',))
 async def mock_sell_full(ctx, stock_name=None, stock_count='1'):
     mock = bot.get_cog('mock_trans')
     await mock.mock_sell(ctx, stock_name, '풀')

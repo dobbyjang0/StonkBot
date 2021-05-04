@@ -73,7 +73,7 @@ class mock_trans(commands.Cog):
         total_stock_price = stock_price * stock_count
         
         # 돈이 없으면 취소
-        if krw_money < total_stock_price:
+        if krw_money < total_stock_price or stock_count == 0:
             await ctx.send("돈 없음")
             await ctx.send(f"최대 {krw_money//stock_price}주 가능")
             return

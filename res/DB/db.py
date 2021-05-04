@@ -963,6 +963,15 @@ class KRXIndexData(Table):
 
         self.connection.execute(sql, **context)
 
+    def read(self, upcode):
+        sql = sql_text("""
+                        SELECT *
+                        FROM `krx_index_data`
+                        WHERE upcode = :upcode;
+                        """)
+
+        result = self.connection.execute(sql, upcode=upcode).fetchone()
+        return result
 
 #main 함수
 def main():

@@ -129,7 +129,38 @@ class serch_result2(formbase):
         else:
             self.embed.description = f'현재가 : **{price}**'
         self.embed.set_image(url=IMG_URL_BASE % (chart_type_change(chart_type), code, int(time.time()*1000//1)))
-        
+
+
+class serch_result_index(formbase):
+    def insert(self, name, price, compared_sign, compared_price, rate, start_price, high_price, low_price, frgsvalue, orgsvalue, chart_type, *arg, **kwarg):
+        MAIN_URL_BASE = 'https://finance.naver.com/sise/sise_index.nhn?code=%s'
+
+        def get_chart_url(name, chart_type):
+            chart_type_dic = {"월": "area/month3", "년": "area/year",
+                              "3년": "area/year3", "10년": "area/year10",
+                              "일봉": "candle/day", "주봉": "candle/week", "월봉": "candle/month"
+                              }
+
+            result = chart_type_dic.get(chart_type)
+            if result:
+                url = 'https://ssl.pstatic.net/imgfinance/chart/mobile/%s/%s_end.png?%s' % (result, name, int(time.time()*1000//1))
+            else:
+                url = 'https://ssl.pstatic.net/imgfinance/chart/sise/siseMain%s.png?sid=%s' % (name, int(time.time()*1000//1))
+            return url
+
+        self.embed.title = f'**{name}**'
+        self.embed.url = MAIN_URL_BASE % name
+        self.embed.description = f'현재가 : **{price}**\t{compared_sign_to_emoji(compared_sign)}{compared_price}\t{rate_plus_sign(rate)}{rate}%\n'
+        self.embed.add_field(name="시가", value=start_price)
+        self.embed.add_field(name="고가", value=high_price)
+        self.embed.add_field(name="저가", value=low_price)
+        self.embed.add_field(name="외인순매수량", value=frgsvalue)
+        self.embed.add_field(name="기관순매수량", value=orgsvalue)
+        self.embed.set_image(url=get_chart_url(name, chart_type))
+        if chart_type == '일':
+            self.embed.set_footer(text='🟣개인 🟠외국인 🔵기관')
+
+
 class serch_result_world(formbase):
     def insert(self, name, code, price, compared_sign, compared_price, rate, start_price, high_price, low_price, naver_url, chart_type, *arg, **kwarg):
         
