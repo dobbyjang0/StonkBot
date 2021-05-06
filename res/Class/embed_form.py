@@ -3,11 +3,11 @@ import time
 
 def embed_factory(form_name, *arg, **kwarg):
     
-        #이 부분 조심하기
+    #이 부분 조심하기
     output = eval(form_name)(*arg, **kwarg)
     return output
 
-#아래의 form들은 모두 이 클래스를 상속할 것
+# 아래의 form들은 모두 이 클래스를 상속할 것
 class formbase:
     def __init__(self, *arg, **kwarg):
         self.embed = discord.Embed()
@@ -98,7 +98,7 @@ class serch_result(formbase):
 
 #신식 이베스트 
 class serch_result2(formbase):
-    def insert(self, name, code, compared_sign=0, compared_price=0, rate=0, price=0, start_price=0, high_price=0, low_price=0, volume=0, transaction_price=0, chart_type=None, alert_info=None, stock_market = None, *arg, **kwarg):
+    def insert(self, name, code, compared_sign=0, compared_price=0, rate=0, price=0, start_price=0, high_price=0, low_price=0, uplimit=0, downlimit=0,volume=0, transaction_price=0, chart_type=None, alert_info=None, stock_market = None, *arg, **kwarg):
         
         IMG_URL_BASE = "https://ssl.pstatic.net/imgfinance/chart/item/%s/%s.png?sidcode=%d"
         MAIN_URL_BASE = "https://finance.naver.com/item/main.nhn?code="
@@ -122,8 +122,8 @@ class serch_result2(formbase):
         if alert_info != '매매정지':
             self.embed.description = f'현재가 : **{price}**\t{compared_sign_to_emoji(compared_sign)}{compared_price}\t{rate_plus_sign(rate)}{rate}%\n'
             self.embed.add_field(name="시가", value=start_price)
-            self.embed.add_field(name="고가", value=high_price)
-            self.embed.add_field(name="저가", value=low_price)
+            self.embed.add_field(name="고가(상한)", value=f'{high_price}({uplimit})')
+            self.embed.add_field(name="저가(하한)", value=f'{low_price}({downlimit})')
             self.embed.add_field(name="거래량(천주)", value=volume)
             self.embed.add_field(name="거래대금(백만)", value=transaction_price)
         else:
@@ -158,7 +158,7 @@ class serch_result_index(formbase):
         self.embed.add_field(name="기관순매수량", value=orgsvalue)
         self.embed.set_image(url=get_chart_url(name, chart_type))
         if chart_type == '일':
-            self.embed.set_footer(text='🟣개인 🟠외국인 🔵기관')
+            self.embed.set_footer(text='🟣개인 🔴외국인 🔵기관')
 
 
 class serch_result_world(formbase):
@@ -216,18 +216,20 @@ class mock_support_no(formbase):
         
 #매매 관련
 class mock_buy(formbase):
-    def insert(self, author, name, count, price, total_price, *arg, **kwarg):
+    def insert(self, author, name, count, price, total_price, total_fee, *arg, **kwarg):
         self.embed.set_author(name=f'{author.name}', icon_url=str(author.avatar_url))
         self.embed.title= f"🔴 {name} {count}주 매수 완료되었습니다."
         self.embed.add_field(name='단가', value=price)
-        self.embed.add_field(name='총 금액', value=total_price)   
+        self.embed.add_field(name='총 금액', value=total_price)
+        self.embed.add_field(name='수수료', value=total_fee)
 
 class mock_sell(formbase):
-    def insert(self, author, name, count, price, total_price, profit, *arg, **kwarg):
+    def insert(self, author, name, count, price, total_price, total_fee, profit, *arg, **kwarg):
         self.embed.set_author(name=f'{author.name}', icon_url=str(author.avatar_url))
         self.embed.title= f"🔵 {name} {count}주 매도 완료되었습니다."
         self.embed.add_field(name='단가', value=price)
         self.embed.add_field(name='총 금액', value=total_price)
+        self.embed.add_field(name='수수료', value=total_fee)
         self.embed.add_field(name='차익', value=int(profit))
         
 class mock_have(formbase):

@@ -167,6 +167,8 @@ async def 주식(ctx, stock_name="도움", chart_type='일'):
     stock_name = serch_result.stock_name
     stock_market = serch_result.stock_market
     alert_info = serch_result.alert_info
+    uplimit = serch_result.uplimit
+    downlimit = serch_result.downlimit
     
     if stock_code is None:
         return
@@ -189,6 +191,7 @@ async def 주식(ctx, stock_name="도움", chart_type='일'):
                       'compared_price' : result[3], 'rate' : result[4],
                       'price' : result[5], 'start_price' : result[6],
                       'high_price' : result[7], 'low_price' : result[8],
+                      'uplimit' : uplimit, 'downlimit' : downlimit,
                       'volume' : result[9], 'transaction_price' : result[10],
                       'chart_type' : chart_type, 'alert_info' : alert_info}
     #이름, 시장구분, 코드, 전일대비구분, 전일대비, 등락율, 현재가, 시가, 조가, 저가, 누적거래량, 누적거래대금, 차트타입

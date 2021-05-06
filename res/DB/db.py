@@ -816,25 +816,25 @@ class KRXRealData(Table):
         return result
     
 class MockTransection(Transection):
-    def buy(self, author_id, stock_code, balance, stock_value):
-        sql_inset = sql_text("""
+    def buy(self, author_id, stock_code, balance, stock_value, stock_fee):
+        sql_inset_stock = sql_text("""
                        INSERT INTO `account`
                        VALUES(:author_id, :stock_code, :balance, :stock_value)
                        ON DUPLICATE KEY UPDATE balance = balance + (:balance), sum_value= sum_value + (:stock_value);
                        """)
                        
-        sql_update = sql_text("""
+        sql_update_won = sql_text("""
                        UPDATE `account`
-                       SET balance = balance - (:stock_value), sum_value = sum_value - (:stock_value)
+                       SET balance = balance - (:stock_value) - (:stock_fee), sum_value = sum_value - (:stock_value)- (:stock_fee)
                        WHERE author_id = :author_id and stock_code = 'KRW';
                        """)
-         
+
         Session = sessionmaker(autocommit=False, autoflush=False, bind=self.connection)
         session = Session()
 
         try:
-            session.execute(sql_inset, {'author_id':author_id, 'stock_code':stock_code, 'balance':balance, 'stock_value':stock_value})
-            session.execute(sql_update, {'author_id':author_id, 'stock_code':stock_code, 'balance':balance, 'stock_value':stock_value})
+            session.execute(sql_inset_stock, {'author_id':author_id, 'stock_code':stock_code, 'balance':balance, 'stock_value':stock_value})
+            session.execute(sql_update_won, {'author_id':author_id, 'stock_code':stock_code, 'balance':balance, 'stock_value':stock_value, 'stock_fee': stock_fee})
             session.commit()
             result = True
         except:
@@ -845,19 +845,19 @@ class MockTransection(Transection):
         
         return result
     
-    def sell(self, author_id, stock_code, balance, stock_value):
-        sql_update_1 = sql_text("""
+    def sell(self, author_id, stock_code, balance, stock_value, stock_fee):
+        sql_update_stock = sql_text("""
                        UPDATE `account`
                        SET balance = balance - (:balance), sum_value= sum_value - (:stock_value)
                        WHERE author_id = :author_id and stock_code = :stock_code;
                        """)
                        
-        sql_update_2 = sql_text("""
+        sql_update_won = sql_text("""
                        UPDATE `account`
-                       SET balance = balance + (:stock_value), sum_value = sum_value + (:stock_value)
+                       SET balance = balance + (:stock_value) - (:stock_fee), sum_value = sum_value + (:stock_value) - (:stock_fee)
                        WHERE author_id = :author_id and stock_code = 'KRW';
                        """)
-        
+
         sql_delete = sql_text("""
                        DELETE FROM `account`
                        WHERE author_id = :author_id and stock_code = :stock_code and balance = 0;
@@ -867,8 +867,8 @@ class MockTransection(Transection):
         session = Session()
 
         try:
-            session.execute(sql_update_1, {'author_id':author_id, 'stock_code':stock_code, 'balance':balance, 'stock_value':stock_value})
-            session.execute(sql_update_2, {'author_id':author_id, 'stock_code':stock_code, 'balance':balance, 'stock_value':stock_value})
+            session.execute(sql_update_stock, {'author_id':author_id, 'stock_code':stock_code, 'balance':balance, 'stock_value':stock_value})
+            session.execute(sql_update_won, {'author_id':author_id, 'stock_code':stock_code, 'balance':balance, 'stock_value':stock_value, 'stock_fee': stock_fee})
             session.execute(sql_delete, {'author_id':author_id, 'stock_code':stock_code, 'balance':balance, 'stock_value':stock_value})
             session.commit()
             result = True
@@ -977,6 +977,7 @@ class KRXIndexData(Table):
 def main():
     import market_data
     market_data.login()
+    a = KRXIndexData()
     a.create_table()
     a.update_table()
     #KRXIndexData().update()

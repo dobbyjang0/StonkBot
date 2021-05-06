@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from decimal import *
 
 from ..DB import db
 from ..Class.embed_form import embed_factory as ef
@@ -9,12 +10,14 @@ class mock_trans(commands.Cog):
         self.bot = bot
 
     async def mock_buy(self, ctx, stock_name, stock_count):
+        BUY_FEE = Decimal('0.0005') # 0.05%
+
         user_id = ctx.author.id
         #입력 오류
         if stock_name is None:
             await ctx.send("거래할 주식을 입력해주세요.")
             return
-        if not (stock_count.isdigit() or stock_count in ['최대', '풀', '올인','반'] or stock_count[-1] in ['%', '퍼', '원']):
+        if not (stock_count.isdigit() or stock_count in ('최대', '풀', '올인','반') or stock_count[-1] in ('%', '퍼', '원')):
             await ctx.send("수량에 숫자를 입력해주세요.")
             return
 
@@ -32,11 +35,12 @@ class mock_trans(commands.Cog):
             return
         
         stock_price = db.KRXRealData().read_price(stock_code)
+        stock_price_include_fee = stock_price * (1+BUY_FEE)
+
         
         if stock_price is None or alert_info == '매매정지':
             await ctx.send("거래 정지 종목입니다.")
             return
-    
         
         # 계좌의 돈을 불러온다
         krw_account = db.AccountTable().read(user_id,"KRW")
@@ -48,18 +52,18 @@ class mock_trans(commands.Cog):
         # stock_count 계산
         if stock_count.isdigit():
             stock_count = int(stock_count)
-        elif stock_count in ['최대', '풀', '올인']:
-            stock_count = krw_money//stock_price
-        elif stock_count in ['반']:
-            stock_count = krw_money//2//stock_price
-        elif stock_count[-1] in ['%', '퍼', '원']:
+        elif stock_count in ('최대', '풀', '올인'):
+            stock_count = int(krw_money/stock_price_include_fee)
+        elif stock_count in ('반',):
+            stock_count = int(krw_money/2/stock_price_include_fee)
+        elif stock_count[-1] in ('%', '퍼', '원'):
             input_int = stock_count[:-1]
             if not input_int.isdigit():
                 await ctx.send("수 입력 오류")
                 return
             real_input_int = int(input_int)
             
-            if stock_count[-1] in ['%', '퍼']:
+            if stock_count[-1] in ('%', '퍼'):
                 base_price = krw_money * real_input_int // 100
             elif stock_count[-1] == '원':
                 base_price = real_input_int
@@ -68,18 +72,19 @@ class mock_trans(commands.Cog):
                 await ctx.send("돈 부족")
                 return
             
-            stock_count = base_price // stock_price
+            stock_count = int(base_price/stock_price_include_fee)
             
         total_stock_price = stock_price * stock_count
+        total_stock_fee = int(total_stock_price * BUY_FEE)
         
         # 돈이 없으면 취소
         if krw_money < total_stock_price or stock_count == 0:
             await ctx.send("돈 없음")
-            await ctx.send(f"최대 {krw_money//stock_price}주 가능")
+            await ctx.send(f"최대 {int(krw_money/stock_price_include_fee)}주 가능")
             return
        
         # 돈이 있으면 계좌 돈 감소, 주식 갯수 증가
-        trade_result = db.MockTransection().buy(user_id, stock_code, stock_count, total_stock_price)
+        trade_result = db.MockTransection().buy(user_id, stock_code, stock_count, total_stock_price, total_stock_fee)
         
         if trade_result:
             input_variable={"guild_id" : ctx.guild.id, "channel_id" : ctx.channel.id,
@@ -92,17 +97,19 @@ class mock_trans(commands.Cog):
             except:
                 print("로그 저장 에러")
                     
-            await ctx.send(embed=ef("mock_buy", ctx.author, stock_name, stock_count, stock_price, total_stock_price).get)
+            await ctx.send(embed=ef("mock_buy", ctx.author, stock_name, stock_count, stock_price, total_stock_price, total_stock_fee).get)
         else:
             await ctx.send('오류 : 거래실패')
 
     async def mock_sell(self, ctx, stock_name, stock_count):
+        SELL_FEE = Decimal('0.0005')
+
         user_id = ctx.author.id
         #입력 오류
         if stock_name is None:
             await ctx.send("거래할 주식을 입력해주세요.")
             return
-        if not (stock_count.isdigit() or stock_count in ['최대', '풀', '올인', '반'] or stock_count[-1] in ['%', '퍼', '원']):
+        if not (stock_count.isdigit() or stock_count in ('최대', '풀', '올인', '반') or stock_count[-1] in ('%', '퍼', '원')):
             await ctx.send("수량에 숫자를 입력해주세요.")
             return
         
@@ -134,18 +141,18 @@ class mock_trans(commands.Cog):
         # stock_count 계산
         if stock_count.isdigit():
             stock_count = int(stock_count)
-        elif stock_count in ['최대', '풀', '올인']:
+        elif stock_count in ('최대', '풀', '올인'):
             stock_count = balance
-        elif stock_count in ['반']:
+        elif stock_count in ('반',):
             stock_count = balance//2
-        elif stock_count[-1] in ['%', '퍼', '원']:
+        elif stock_count[-1] in ('%', '퍼', '원'):
             input_int = stock_count[:-1]
             if not input_int.isdigit():
                 await ctx.send("수 입력 오류")
                 return
             real_input_int = int(input_int)
             
-            if stock_count[-1] in ['%', '퍼']:
+            if stock_count[-1] in ('%', '퍼'):
                 stock_count = balance*real_input_int//100
             elif stock_count[-1] == '원':
                 stock_count = real_input_int//stock_price
@@ -155,9 +162,11 @@ class mock_trans(commands.Cog):
                     return
         
         total_stock_price = stock_price * stock_count
+        total_stock_fee = int(total_stock_price * SELL_FEE)
+
         sum_value = stock_account[1]
         sell_sum_value = sum_value*stock_count/balance
-        profit = total_stock_price - sell_sum_value
+        profit = total_stock_price - sell_sum_value - total_stock_fee
         
         # 보유 주식이 팔려는 갯수보다 적으면 취소
         if balance < stock_count:
@@ -166,7 +175,7 @@ class mock_trans(commands.Cog):
             return
         
         # 갯수가 충분하면 주식 갯수 감소, 계좌 돈 증가 
-        trade_result = db.MockTransection().sell(user_id, stock_code, stock_count, total_stock_price)
+        trade_result = db.MockTransection().sell(user_id, stock_code, stock_count, total_stock_price, total_stock_fee)
         
         if trade_result:
             input_variable={"guild_id" : ctx.guild.id, "channel_id" : ctx.channel.id,
@@ -179,7 +188,7 @@ class mock_trans(commands.Cog):
             except:
                 print("로그 저장 에러")
             
-            await ctx.send(embed=ef("mock_sell", ctx.author, stock_name, stock_count, stock_price, total_stock_price, profit).get)
+            await ctx.send(embed=ef("mock_sell", ctx.author, stock_name, stock_count, stock_price, total_stock_price, total_stock_fee, profit).get)
         else:
             await ctx.send('오류 : 거래실패, 거래가 취소되었습니다.')
 
