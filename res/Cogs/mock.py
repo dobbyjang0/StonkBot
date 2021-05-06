@@ -10,7 +10,7 @@ class mock_trans(commands.Cog):
         self.bot = bot
 
     async def mock_buy(self, ctx, stock_name, stock_count):
-        BUY_FEE = Decimal('0.0005') # 0.05%
+        BUY_FEE = Decimal('0.005') # 0.05%
 
         user_id = ctx.author.id
         #입력 오류
@@ -102,7 +102,7 @@ class mock_trans(commands.Cog):
             await ctx.send('오류 : 거래실패')
 
     async def mock_sell(self, ctx, stock_name, stock_count):
-        SELL_FEE = Decimal('0.0005')
+        SELL_FEE = Decimal('0.005')
 
         user_id = ctx.author.id
         #입력 오류
@@ -174,7 +174,7 @@ class mock_trans(commands.Cog):
             await ctx.send(f"최대 {balance}주 가능")
             return
         
-        # 갯수가 충분하면 주식 갯수 감소, 계좌 돈 증가 
+        # 갯수가 충분하면 주식 갯수 감소, 계좌 돈 증가
         trade_result = db.MockTransection().sell(user_id, stock_code, stock_count, total_stock_price, total_stock_fee)
         
         if trade_result:
