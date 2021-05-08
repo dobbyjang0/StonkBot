@@ -78,7 +78,28 @@ class serch_stock(commands.Cog):
                 # 목록 지우고 출력
                 await list_msg.delete()
                 return capsule
-            
+
+    async def warn_send(self, ctx, warn_type):
+        waring_message = await ctx.send(embed=ef("warning_message", warn_type).get)
+        await waring_message.add_reaction("✔")
+        await waring_message.add_reaction("✖")
+
+        def check(reaction, user):
+            return user == ctx.author and str(reaction.emoji) in ("✔", "✖") and reaction.message == ctx.messgae
+
+        try:
+            reaction, user = await self.bot.wait_for('reaction_add', timeout=60.0, check=check)
+        except:
+            await ctx.send(f'{warn_type}이(가) 취소되었습니다.')
+            return False
+        else:
+            if reaction == "✔":
+                await ctx.send(f'{warn_type}이(가) 승인되었습니다.')
+                return True
+            else:
+                await ctx.send(f'{warn_type}이(가) 취소되었습니다.')
+                return False
+
     #주식 코드인지 아닌지 확인
     def is_stock_code(self, stock_code):
         stock_name = db.StockInfoTable().read_stock_code(stock_code)

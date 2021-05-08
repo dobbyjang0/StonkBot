@@ -10,7 +10,7 @@ class mock_trans(commands.Cog):
         self.bot = bot
 
     async def mock_buy(self, ctx, stock_name, stock_count):
-        BUY_FEE = Decimal('0.005') # 0.05%
+        BUY_FEE = Decimal('0.001') # 0.5%
 
         user_id = ctx.author.id
         #입력 오류
@@ -102,7 +102,7 @@ class mock_trans(commands.Cog):
             await ctx.send('오류 : 거래실패')
 
     async def mock_sell(self, ctx, stock_name, stock_count):
-        SELL_FEE = Decimal('0.005')
+        SELL_FEE = Decimal('0.001')
 
         user_id = ctx.author.id
         #입력 오류
@@ -191,6 +191,15 @@ class mock_trans(commands.Cog):
             await ctx.send(embed=ef("mock_sell", ctx.author, stock_name, stock_count, stock_price, total_stock_price, total_stock_fee, profit).get)
         else:
             await ctx.send('오류 : 거래실패, 거래가 취소되었습니다.')
+
+        async def mock_sell_all(self, ctx):
+            serch_stock = self.bot.get_cog('serch_stock')
+            warn_result = await serch_stock.warn_send(ctx, '전량매도')
+
+            if warn_result:
+                pass
+            return
+
 
 def setup(bot):
     bot.add_cog(mock_trans(bot))

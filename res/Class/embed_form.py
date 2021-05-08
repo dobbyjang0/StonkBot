@@ -341,7 +341,13 @@ class ranking(formbase):
     
         self.embed.title = title
         self.embed.description = "\n".join(x for x in description_list)
-        
+
+#
+class warning_message(formbase):
+    def init_make(self):
+        self.embed.description = "동의하시면 ✔, 아니라면 ✖를 클릭해주세요."
+    def insert(self, message):
+        self.embed.title = f"{message}를(을) 하시겠습니까?"
 
 class testembed(formbase):
     def init_make(self):

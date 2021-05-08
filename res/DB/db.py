@@ -588,7 +588,7 @@ class AccountTable(Table):
             result = self.connection.execute(sql, author_id=author_id, stock_code=stock_code).fetchone()
             return result
 
-    #계좌 자산을 이름과 같이 읽는다.
+    # 계좌 자산을 이름과 같이 읽는다.
     def read_all(self, author_id):
         sql = sql_text("""
                        SELECT ua.stock_code, ua.balance, ua.sum_value, sc.name, 
@@ -606,7 +606,31 @@ class AccountTable(Table):
                        """)
         df = pandas.read_sql_query(sql = sql, con = self.connection, params={"author_id": author_id})
         return df
-    
+
+    # 가격만 생각한다
+    def read_all_sum(self, author_id):
+        sql = sql_text("""
+                       SELECT SUM(
+                           CASE WHEN rd.price IS NULL 
+                           THEN ua.sum_value
+                           ELSE rd.price*ua.balance END)
+                           AS sum_value
+                       FROM (
+                           SELECT stock_code, balance, sum_value
+                           FROM `account`
+                           WHERE author_id = :author_id) AS ua
+                       LEFT JOIN `krx_real_data` AS rd ON ua.stock_code = rd.shcode;
+                       """)
+
+        price = self.connection.execute(sql, author_id=author_id).fetchone()
+
+        if price:
+            result = price[0]
+        else:
+            result = None
+
+        return result
+
     def read_rank_all(self):
         sql = sql_text("""
                        SELECT author_id, MAX(sum_value) AS all_value

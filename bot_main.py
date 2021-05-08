@@ -30,8 +30,11 @@ async def on_ready():
     print("--- 연결 성공 ---")
     print(f"봇 이름: {bot.user.name}")
     print(f"ID: {bot.user.id}")
-        
+
+    '''
     Login().login()
+    '''
+
     print('로그인 완료')
     if datetime.now().hour >= 8 and datetime.now().hour < 17:
         await triggers.bot_action(bot).api_start()
@@ -40,10 +43,10 @@ async def on_ready():
         await bot.get_channel(833299968987103242).send('실시간 데이터 시작 안함')
     
     sched = AsyncIOScheduler(timezone="Asia/Seoul")
-    sched.add_job(triggers.bot_action(bot).api_start, 'cron', hour=8)
+    sched.add_job(triggers.bot_action(bot).api_start, 'cron', hour=8, day_of_week="0-4")
     # 봇 끄는거 확실히 완성하고 주석표시 지울 것
-    sched.add_job(triggers.bot_action(bot).api_stop, 'cron', hour=16)
-    sched.add_job(triggers.bot_action(bot).update_stock_info, 'cron', hour=7)
+    sched.add_job(triggers.bot_action(bot).api_stop, 'cron', hour=16, day_of_week="0-4")
+    sched.add_job(triggers.bot_action(bot).update_stock_info, 'cron', hour=7, day_of_week="0-4")
     
     sched.start()
     
@@ -345,13 +348,43 @@ async def mock_have(ctx, stock_name=None):
     
     await ctx.send(embed=ef("mock_have", ctx.author, fund_list).get)
 
+@bot.command(name="파산")
+async def mock_bankrupt(ctx):
+    user_id = ctx.author.id
+    total_account = db.AccountTable().read_all_sum(user_id)
+
+    read_support = db.SupportFundTable().read(user_id)
+    if not read_support:
+        await ctx.send('지원금을 받은적이 없습니다')
+        return
+    else:
+        support_count = read_support[1]
+
+    if not total_account:
+        await ctx.send('계좌가 없습니다')
+        return
+
+    if support_count >= 30 and total_account <= 100000:
+        serch_stock = bot.get_cog('serch_stock')
+        warn_result = await serch_stock.warn_send(ctx, '파산')
+
+        if warn_result:
+            db.SupportFundTable.delete(user_id)
+
+        return
+
+    else:
+        await ctx.send('파산은 지원금 횟수 30회 이상, 계좌 가치 십만 이하만 가능합니다.')
+        return
+
+
 #순위 관련 기능
 @bot.command()
 async def 순위(ctx, stock_name = 'all'):
-    if stock_name in ['all', '전체', '자산']:
+    if stock_name in ('all', '전체', '자산'):
         df = db.AccountTable().read_rank_all()
         stock_name = '전체 자산 가치(매수기준)' 
-    elif stock_name in ['돈', '한화', 'KRW', '원', '현금']:
+    elif stock_name in ('돈', '한화', 'KRW', '원', '현금'):
         df = db.AccountTable().read_rank_by_code('KRW')
         stock_name = '원화'
     else:
