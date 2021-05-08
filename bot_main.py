@@ -32,7 +32,7 @@ async def on_ready():
     print(f"ID: {bot.user.id}")
 
     '''
-    Login().login()
+    Login().login_mock()
     '''
 
     print('로그인 완료')
@@ -335,6 +335,11 @@ async def mock_sell(ctx, stock_name=None, stock_count='1'):
 async def mock_sell_full(ctx, stock_name=None, stock_count='1'):
     mock = bot.get_cog('mock_trans')
     await mock.mock_sell(ctx, stock_name, '풀')
+
+@bot.command(name="전량매도")
+async def mock_sell_all(ctx):
+    mock = bot.get_cog('mock_trans')
+    await mock.mock_sell_all(ctx)
 
 
 @bot.command(name="보유")

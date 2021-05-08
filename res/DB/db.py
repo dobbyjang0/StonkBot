@@ -607,6 +607,25 @@ class AccountTable(Table):
         df = pandas.read_sql_query(sql = sql, con = self.connection, params={"author_id": author_id})
         return df
 
+    def read_only_tradealbe_stock(self, author_id):
+        sql = sql_text("""
+                       SELECT ua.stock_code, ua.balance, ua.sum_value, sc.name, 
+                           CASE WHEN rd.price IS NULL 
+                           THEN ua.sum_value
+                           ELSE rd.price*ua.balance END 
+                           AS now_price
+                       FROM (
+                           SELECT stock_code, balance, sum_value
+                           FROM `account`
+                           WHERE author_id = :author_id) AS ua
+                       LEFT JOIN `stock_code` AS sc ON ua.stock_code = sc.code
+                       LEFT JOIN `krx_real_data` AS rd ON ua.stock_code = rd.shcode
+                       WHERE sc.type != '매매정지' and ua.stock_code != 'KRW';
+                       """)
+
+        df = pandas.read_sql_query(sql = sql, con = self.connection, params={"author_id": author_id})
+        return df
+
     # 가격만 생각한다
     def read_all_sum(self, author_id):
         sql = sql_text("""

@@ -231,7 +231,14 @@ class mock_sell(formbase):
         self.embed.add_field(name='총 금액', value=total_price)
         self.embed.add_field(name='수수료', value=total_fee)
         self.embed.add_field(name='차익', value=int(profit))
-        
+
+class mock_sell_all(formbase):
+    def insert(self, author, trade_list):
+        self.embed.set_author(name=f'{author.name}', icon_url=str(author.avatar_url))
+        self.embed.title = '총 거래내역'
+        self.embed.description = "\n".join(x for x in trade_list)
+
+
 class mock_have(formbase):
     def insert(self, author, pd, *arg, **kwarg):
         self.embed.set_author(name=f'{author.name}님의 계좌입니다.', icon_url=str(author.avatar_url))

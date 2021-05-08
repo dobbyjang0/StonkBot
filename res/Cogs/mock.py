@@ -192,13 +192,40 @@ class mock_trans(commands.Cog):
         else:
             await ctx.send('오류 : 거래실패, 거래가 취소되었습니다.')
 
-        async def mock_sell_all(self, ctx):
-            serch_stock = self.bot.get_cog('serch_stock')
-            warn_result = await serch_stock.warn_send(ctx, '전량매도')
+    async def mock_sell_all(self, ctx):
+        serch_stock = self.bot.get_cog('serch_stock')
+        warn_result = await serch_stock.warn_send(ctx, '전량매도')
 
-            if warn_result:
-                pass
-            return
+        if warn_result:
+            SELL_FEE = Decimal('0.001')
+            user_id = ctx.author.id
+
+            stock_account = db.AccountTable().read_only_tradealbe_stock(self, user_id)
+
+            if stock_account is None:
+                await ctx.send("팔고자 하는 주식이 없습니다.")
+                return
+
+            trade_list = ['주식명 0주 : 판매금액(이익금)']
+
+            for idx in stock_account.index:
+                stock_name = stock_account.iat[idx, 3]
+                stock_code = stock_account.iat[idx, 0]
+                stock_count = int(stock_account.iat[idx, 1])
+                all_buy_price = stock_account.iat[idx, 2]
+                all_present_price = stock_account.iat[idx, 4]
+                total_stock_fee = int(all_present_price * SELL_FEE)
+
+                profit = all_present_price - all_buy_price - total_stock_fee
+
+                trade_result = db.MockTransection().sell(user_id, stock_code, stock_count, all_present_price, total_stock_fee)
+
+                if trade_result:
+                    trade_list.append(f'{stock_name} {stock_count}주 : {all_present_price}({int(profit)})')
+                else:
+                    trade_list.append(f'{stock_name} {stock_count}주 : 거래실패')
+
+            await ctx.send(embed=ef("mock_sell_all", ctx.author, trade_list).get)
 
 
 def setup(bot):
