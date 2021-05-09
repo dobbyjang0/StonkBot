@@ -130,11 +130,14 @@ class bot_action(metaclass=MetaSingleton):
 
     
     async def update_stock_info(self):
-        # db.StockInfoTable().drop_table()
-        db.StockInfoTable().create_table()
-        db.StockInfoTable().update_table()
-        
-        await self.channel.send('주식테이블 업데이트 완료')
+        result = db.StockInfoTable().update_table()
+
+        # 서버 연결상태가 True 이면 업데이트 실행 알림 전송, False 이면 업데이트 취소 알림 전송
+        if result == True:
+            await self.channel.send('주식테이블 업데이트 완료')
+
+        else:
+            await self.channel.send('api 미연결. 주식테이블 업데이트 취소')
         
         return
 
