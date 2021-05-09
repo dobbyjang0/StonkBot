@@ -1016,6 +1016,54 @@ class KRXIndexData(Table):
         result = self.connection.execute(sql, upcode=upcode).fetchone()
         return result
 
+class TodaySoaring(Table):
+    def create_table(self):
+        sql = sql_text("""
+                       CREATE TABLE `today_soaring`(
+                           `stock_code` varchar(8) PRIMARY KEY,
+                           `datetime` datetime DEFAULT NOW(),
+                           `increase_rate` int unsigned                       
+                           );
+                       """)
+        self.connection.execute(sql)
+
+    def check_5per(self):
+        sql = sql_text("""
+                        SELECT nh.author_id, nh.open, nh.price
+                        FROM(
+                            SELECT shcode AS stock_code, open, price
+                            FROM `krx_real_data`
+                            WHERE price > open * 1.05) AS nh
+                        LEFT JOIN `today_soaring` AS ts ON nh.stock_code = ts.stock_code
+                        WHERE ts.stock_code is NULL
+                        """)
+
+        df = pandas.read_sql_query(sql=sql, con=self.connection)
+        return df
+
+    def check_10per(self):
+        sql = sql_text("""
+                        SELECT nh.author_id, nh.open, nh.price
+                        FROM(
+                            SELECT shcode AS stock_code, open, price
+                            FROM `krx_real_data`
+                            WHERE price > open * 1.1) AS nh
+                        LEFT JOIN `today_soaring` AS ts ON nh.stock_code = ts.stock_code
+                        WHERE ts.increase_rate != 10
+                        """)
+
+        df = pandas.read_sql_query(sql=sql, con=self.connection)
+        return df
+
+    def insert(self, stock_code, increase_rate):
+        sql = sql_text("""
+                        INSERT INTO `today_soaring`
+                        VALUES(:stock_code, DEFAULT, :increase_rate)
+                        ON DUPLICATE KEY UPDATE datetime=DEFAULT, increase_rate=:increase_rate
+                        """)
+
+        self.connection.execute(sql, stock_code=stock_code, increase_rate=increase_rate)
+
 #main 함수
 def main():
     import market_data
