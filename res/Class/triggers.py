@@ -68,6 +68,7 @@ class bot_action(metaclass=MetaSingleton):
     def __init__(self, bot):
         self.bot = bot
         self.channel = self.bot.get_channel(833299968987103242)
+        self.alarm_channel = self.bot.get_channel(840931230802247691)
 
         self.process_list = []
 
@@ -129,13 +130,36 @@ class bot_action(metaclass=MetaSingleton):
 
     
     async def update_stock_info(self):
-        # db.StockInfoTable().drop_table()
-        db.StockInfoTable().create_table()
-        db.StockInfoTable().update_table()
-        
-        await self.channel.send('주식테이블 업데이트 완료')
+        result = db.StockInfoTable().update_table()
+
+        # 서버 연결상태가 True 이면 업데이트 실행 알림 전송, False 이면 업데이트 취소 알림 전송
+        if result == True:
+            await self.channel.send('주식테이블 업데이트 완료')
+
+        else:
+            await self.channel.send('api 미연결. 주식테이블 업데이트 취소')
         
         return
+
+    async def soaring_alarm(self):
+        while self.is_real_time_on:
+            five_pd = db.TodaySoaring().check_5per()
+
+            for idx in five_pd.index():
+                stock_code = five_pd[idx,0]
+                await self.alarm_channel(f'{stock_code} 5% 오름')
+                db.TodaySoaring().insert(stock_code, 5)
+
+            ten_pd = db.TodaySoaring().check_10per()
+
+            for idx in ten_pd.index():
+                stock_code = ten_pd[idx,0]
+                await self.alarm_channel(f'{stock_code} 10% 오름')
+                db.TodaySoaring().insert(stock_code, 10)
+
+            time.sleep(300)
+
+
 
 def main():
     if __name__ == '__main__':

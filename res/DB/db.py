@@ -399,49 +399,50 @@ class StockInfoTable(Table):
         종목정보 업데이트
 
         !todo 하루 한번 08:20 에 실행되도록 할것
+        returns:
+            Bool type
+            api 서버와 연결되어 있으면 True 리턴
+            api 서버와 연결되어 있지 않으면 False 리턴
         """
 
-        # csv파일 읽어오는 방식
-        #특히 아직까지 주식정보 자동으로 뽑는법을 모르겠음. krx거기는 자바스크립트로 되어있어서 안퍼짐
-        # df = pandas.read_csv("data_4021_20210328.csv", encoding='CP949')
-        #
-        # df = df[['단축코드', '한글 종목약명', '시장구분']]
-        # df = df.rename(columns={'단축코드': 'code', '한글 종목약명': 'name', '시장구분': 'market'})
-        #
-        # df.to_sql(name='stock_code', con=self.connection, if_exists='append',index=False, method='multi')
-        # print("저장완료")
-        
-
-        # 이전 데이터 모두 삭제
-        sql = sql_text("""
-                       DELETE FROM stock_code;
-                       """)
-        self.connection.execute(sql)
+        # 이베스트 증권 서버 연결상태가 True 이면 테이블 업데이트 실시하고 True반환
+        # 그렇지 않으면 업데이트 미실시 후 False반환
+        if XASession().is_connected():
+            # 이전 데이터 모두 삭제
+            sql = sql_text("""
+                           DELETE FROM stock_code;
+                           """)
+            self.connection.execute(sql)
 
 
-        # api 사용하여 종목이름, 종목코드 read
-        df_name = self._stock_name()
+            # api 사용하여 종목이름, 종목코드 read
+            df_name = self._stock_name()
 
-        # 투자유의/관리 정보 read
-        df_alert = self._stock_alert()
-        df_danger = self._stock_danger()
-        df_alertdanger = pandas.concat([df_alert, df_danger])
-        df_alertdanger['type'] = df_alertdanger['type'].astype('category')
+            # 투자유의/관리 정보 read
+            df_alert = self._stock_alert()
+            df_danger = self._stock_danger()
+            df_alertdanger = pandas.concat([df_alert, df_danger])
+            df_alertdanger['type'] = df_alertdanger['type'].astype('category')
 
-        custom_order = ['매매정지', '정리매매', '투자경고', '투자위험', '위험예고', '단기과열지정', '단기과열지정예고', '관리', '불성실공시', '투자유의', '투자환기', '상장주식수 부족']
-        df_alertdanger['type'] = df_alertdanger['type'].cat.set_categories(custom_order, ordered=True)
-        df_alertdanger.sort_values(by=['type'], inplace=True)
-        df_alertdanger = df_alertdanger.drop_duplicates(['code'], keep = 'first')
+            custom_order = ['매매정지', '정리매매', '투자경고', '투자위험', '위험예고', '단기과열지정', '단기과열지정예고', '관리', '불성실공시', '투자유의', '투자환기', '상장주식수 부족']
+            df_alertdanger['type'] = df_alertdanger['type'].cat.set_categories(custom_order, ordered=True)
+            df_alertdanger.sort_values(by=['type'], inplace=True)
+            df_alertdanger = df_alertdanger.drop_duplicates(['code'], keep = 'first')
 
-        # 병합후 데이터베이스에 저장
-        df = pandas.merge(df_name, df_alertdanger, on='code', how='left')
-        
-        df['uplimit'] = df['uplimit'].map(int)
-        df['downlimit'] = df['downlimit'].map(int)
-        df['beforeclose'] = df['beforeclose'].map(int)
-        
-        df.to_sql(name='stock_code', con=self.connection, if_exists='append', index=False, method='multi')
-        print("저장완료")
+            # 병합후 데이터베이스에 저장
+            df = pandas.merge(df_name, df_alertdanger, on='code', how='left')
+
+            df['uplimit'] = df['uplimit'].map(int)
+            df['downlimit'] = df['downlimit'].map(int)
+            df['beforeclose'] = df['beforeclose'].map(int)
+
+            df.to_sql(name='stock_code', con=self.connection, if_exists='append', index=False, method='multi')
+            print("저장완료")
+            return True
+
+        else:
+            print("EBEST disconnected")
+            return False
 
     
     def drop_table(self):
@@ -1015,6 +1016,54 @@ class KRXIndexData(Table):
 
         result = self.connection.execute(sql, upcode=upcode).fetchone()
         return result
+
+class TodaySoaring(Table):
+    def create_table(self):
+        sql = sql_text("""
+                       CREATE TABLE `today_soaring`(
+                           `stock_code` varchar(8) PRIMARY KEY,
+                           `datetime` datetime DEFAULT NOW(),
+                           `increase_rate` int unsigned                       
+                           );
+                       """)
+        self.connection.execute(sql)
+
+    def check_5per(self):
+        sql = sql_text("""
+                        SELECT nh.author_id, nh.open, nh.price
+                        FROM(
+                            SELECT shcode AS stock_code, open, price
+                            FROM `krx_real_data`
+                            WHERE price > open * 1.05) AS nh
+                        LEFT JOIN `today_soaring` AS ts ON nh.stock_code = ts.stock_code
+                        WHERE ts.stock_code is NULL
+                        """)
+
+        df = pandas.read_sql_query(sql=sql, con=self.connection)
+        return df
+
+    def check_10per(self):
+        sql = sql_text("""
+                        SELECT nh.author_id, nh.open, nh.price
+                        FROM(
+                            SELECT shcode AS stock_code, open, price
+                            FROM `krx_real_data`
+                            WHERE price > open * 1.1) AS nh
+                        LEFT JOIN `today_soaring` AS ts ON nh.stock_code = ts.stock_code
+                        WHERE ts.increase_rate != 10
+                        """)
+
+        df = pandas.read_sql_query(sql=sql, con=self.connection)
+        return df
+
+    def insert(self, stock_code, increase_rate):
+        sql = sql_text("""
+                        INSERT INTO `today_soaring`
+                        VALUES(:stock_code, DEFAULT, :increase_rate)
+                        ON DUPLICATE KEY UPDATE datetime=DEFAULT, increase_rate=:increase_rate
+                        """)
+
+        self.connection.execute(sql, stock_code=stock_code, increase_rate=increase_rate)
 
 #main 함수
 def main():

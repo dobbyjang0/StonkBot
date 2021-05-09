@@ -1,5 +1,6 @@
 import win32com.client
 import pythoncom
+import json
 
 """
 doc 쓰기 귀찮다
@@ -10,6 +11,8 @@ doc 쓰기 귀찮다
 class Settings:
     """
     전역 설정 클래스
+    # todo: 멀티프로세스 환경에서 .res 파일 디렉토리 변경시 제대로 설정 안들어갈듯. *\
+    # todo: 공유메모리에 Settings()의 인스턴스를 적재해야할텐데...
 
     Attributes:
         res_directory: .res 파일이 위치한 디렉토리(str)
@@ -150,6 +153,18 @@ class XASession:
 
         self.com_obj.ConnectServer("hts.ebestsec.co.kr", 20001)
         self.login_status = 0
+
+    # 서버 연결상태 반환
+    def is_connected(self):
+        """
+        서버 연결상태를 반환하는 메서드
+        
+        returns:
+            Bool type
+            연결되었으면 True, 연결되지않았으면 False 반환
+        """
+        result = self.com_obj.IsConnected()
+        return result
 
     # 로그인
     def login(self, user_info, server_type = 0):

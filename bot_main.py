@@ -31,11 +31,10 @@ async def on_ready():
     print(f"봇 이름: {bot.user.name}")
     print(f"ID: {bot.user.id}")
 
-    '''
-    Login().login_mock()
-    '''
 
-    print('로그인 완료')
+    Login().login_mock()
+
+    # print('로그인 완료') → 이거 어차피 api에서 메세지 띄워주는거라 걍 주석처리해놈.
     if datetime.now().hour >= 8 and datetime.now().hour < 17:
         await triggers.bot_action(bot).api_start()
         print('실시간 데이터 시작')
